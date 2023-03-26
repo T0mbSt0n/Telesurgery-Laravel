@@ -1,5 +1,4 @@
 @extends('../layout/' . $layout)
-<script src="{{ asset('js/mqtt.js') }}"></script>
 
 @section('subhead')
     <title>Chart - Telesurgery</title>
@@ -129,5 +128,5 @@
 @endsection
 
 @section('script')
-<script type="module" src="{{ mix('js/mqtt.js') }}"></script>
+
 @endsection

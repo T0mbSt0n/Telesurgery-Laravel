@@ -8,6 +8,7 @@ use App\Http\Controllers\ColorSchemeController;
 use App\Http\Controllers\mqttController;
 use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\MeetingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -57,11 +58,16 @@ Route::post('change-pass',[AuthController::class, 'updatePassword'])->name('updt
 Route::get('/', function () {
     return redirect('/' . Str::uuid());
 });
+Route::get('default', function () {
+    return redirect('meeting-room.default');
+});
 
 
 Route::middleware('auth')->group(function() {
     Route::get('logout', [AuthController::class, 'logout'])->name('logout');
     Route::post('profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('meeting-room', [MeetingController::class, 'handleMeetingRoom'])->name ('meeting.room');
+    Route::get('/meeting-room/{roomName}/stream', [MeetingController::class, 'streamMeetingRoom'])->name('meeting-room.stream');
     Route::post('profile/picture', [ProfileController::class, 'picture'])->name('picture.update');
     Route::controller(PageController::class)->group(function() {
         Route::get('/', 'dashboardOverview1')->name('dashboard-overview-1');

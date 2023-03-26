@@ -1097,7 +1097,7 @@ import Chart from "chart.js/auto";
             },
         });
     }
-    var client = mqtt.connect('ws://149.100.138.89:9001', 
+    var client = mqtt.connect('ws://185.201.8.195:9001', 
         {
             username: 'root',
             password: 'Telerobotics@1234'
