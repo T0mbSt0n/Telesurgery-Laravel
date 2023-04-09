@@ -17,7 +17,7 @@
                     <div class="flex flex-col sm:flex-row items-center p-1 border-b border-slate-300/60 dark:border-darkmode-100">
                         <h2 class="font-medium text-base mr-auto">Streaming</h2>
                     </div> 
-                    <form method="POST" action="/meeting-room" class="flex flex-grid items-center gap-3 lg:mt-2"> 
+                    <form method="POST" action="/meeting" class="flex flex-grid items-center gap-3 lg:mt-2"> 
                         @csrf
                         <input type="text" name="room_name"id="room_name" class="form-control col-span-5" placeholder="Input inline 1" aria-label="default input inline 1">
                         <button type="submit" name="action" class="btn btn-elevated-rounded-dark w-24 mr-1 mb-2">GO</button>
@@ -27,6 +27,13 @@
         </div>
         <!-- END: Room Join -->
     </div>
+        <!-- BEGIN: Notification Content -->
+        <div id="success-notification-content" class="toastify-content hidden flex"> <i class="text-success" data-lucide="check-circle"></i>
+            <div class="ml-4 mr-4">
+                <div class="font-medium">Yay! You are Logged In</div>
+            </div>
+        </div> 
+        <!-- END: Notification Content -->
     <script src='https://meet.jit.si/external_api.js'></script>
     <script>
         const domain = 'meet.jit.si';
@@ -51,4 +58,17 @@
 @endsection
 
 @section('script')
+<script type="module">
+    (function () {
+        Toastify({
+            node: $("#success-notification-content").clone().removeClass("hidden")[0],
+            duration: 2500,
+            newWindow: true,
+            close: true,
+            gravity: "top",
+            position: "right",
+            stopOnFocus: true
+        }).showToast();
+    })();
+</script>
 @endsection

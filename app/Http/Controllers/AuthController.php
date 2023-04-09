@@ -27,7 +27,7 @@ class AuthController extends Controller
     public function registerView()
     {
 
-        return view('register.main',[
+        return view('login.main',[
             'layout'=> 'register'
         ]);
     }
@@ -37,19 +37,26 @@ class AuthController extends Controller
 
         // Save the validated data to the database
         $validatedData = $request->validate([
-            'name' => 'required',
+            'name' => 'required|max:255',
             'email' => 'required|email|unique:users',
-            'password' => 'required|min:8',
-            'password_confirm' => 'required|same:password',
+            'password' => 'required|confirmed',
+            'role' => 'required|in:admin,user',
         ]);
-
-        $user = User::create([
-            'name' => $validatedData['name'],
-            'email' => $validatedData['email'],
-            'password' => Hash::make ($validatedData['password']),
-        ]);
-
-        return response()->json(['message' => 'Registration successful']);
+        $user = new User();
+        $user->name = $validatedData['name'];
+        $user->email = $validatedData['email'];
+        $user->password = Hash::make($validatedData['password']);
+        $user->role = $validatedData['role'] ?? 'user';
+        $user->save();
+        
+        if ($user) {
+            // Flash a success message to the session
+            $request->session()->flash('success', 'User has been added');
+        } else {
+            // Flash a failure message to the session
+            $request->session()->flash('failure', 'Adding user failed');
+        }
+        return view('pages.add-users');
     }
 
     /**
@@ -96,9 +103,17 @@ class AuthController extends Controller
 
 
         #Update the new Password
-        User::whereId(auth()->user()->id)->update([
+        $user = User::whereId(auth()->user()->id)->update([
             'password' => Hash::make($request->new_password)
         ]);
+
+        if ($user) {
+            // Flash a success message to the session
+            $request->session()->flash('success', 'Password Update successful');
+        } else {
+            // Flash a failure message to the session
+            $request->session()->flash('failure', 'Password Update failed');
+        }
 
         return back()->with("status", "Password changed successfully!");
 }

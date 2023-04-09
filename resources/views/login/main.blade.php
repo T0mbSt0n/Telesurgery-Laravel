@@ -43,60 +43,74 @@
                     </div>
                     <div class="intro-x mt-5 xl:mt-8 text-center xl:text-left">
                         <button id="btn-login" class="btn btn-primary py-3 px-4 w-full xl:w-32 xl:mr-3 align-top">Login</button>
-                        <a href="/register"><button class="btn btn-outline-secondary py-3 px-4 w-full xl:w-32 mt-3 xl:mt-0 align-top">Sign Up</button></a>
                     </div>
                 </div>
             </div>
             <!-- END: Login Form -->
+                 <!-- BEGIN: Notification Content -->
+                <div id="basic-non-sticky-notification-content" class="toastify-content hidden flex">
+                <i class="text-success" data-lucide="x-circle"></i>
+                    <div class="font-medium">  Oh no! Check Your email or password!</div> 
+                </div> 
+                <!-- END: Notification Content -->
         </div>
     </div>
 @endsection
 
 @section('script')
-    <script type="module">
-        (function () {
-            async function login() {
-                // Reset state
-                $('#login-form').find('.login__input').removeClass('border-danger')
-                $('#login-form').find('.login__input-error').html('')
+<script type="module">
+    (function () {
+        async function login() {
+            // Reset state
+            $('#login-form').find('.login__input').removeClass('border-danger')
+            $('#login-form').find('.login__input-error').html('')
 
-                // Post form
-                let email = $('#email').val()
-                let password = $('#password').val()
+            // Post form
+            let email = $('#email').val()
+            let password = $('#password').val()
 
-                // Loading state
-                $('#btn-login').html('<i data-loading-icon="oval" data-color="white" class="w-5 h-5 mx-auto"></i>')
-                tailwind.svgLoader()
-                await helper.delay(1500)
+            // Loading state
+            $('#btn-login').html('<i data-loading-icon="oval" data-color="white" class="w-5 h-5 mx-auto"></i>')
+            tailwind.svgLoader()
+            await helper.delay(1500)
 
-                axios.post(`login`, {
-                    email: email,
-                    password: password
-                }).then(res => {
-                    location.href = '/'
-                }).catch(err => {
-                    $('#btn-login').html('Login')
-                    if (err.response.data.message != 'Wrong email or password.') {
-                        for (const [key, val] of Object.entries(err.response.data.errors)) {
-                            $(`#${key}`).addClass('border-danger')
-                            $(`#error-${key}`).html(val)
-                        }
-                    } else {
-                        $(`#password`).addClass('border-danger')
-                        $(`#error-password`).html(err.response.data.message)
+            axios.post(`login`, {
+                email: email,
+                password: password
+            }).then(res => {
+                location.href = '/'
+            }).catch(err => {
+                $('#btn-login').html('Login')
+                if (err.response.data.message != 'Wrong email or password.') {
+                    for (const [key, val] of Object.entries(err.response.data.errors)) {
+                        $(`#${key}`).addClass('border-danger')
+                        $(`#error-${key}`).html(val)
                     }
-                })
-            }
-
-            $('#login-form').on('keyup', function(e) {
-                if (e.keyCode === 13) {
-                    login()
+                } else {
+                    $(`#password`).addClass('border-danger')
+                    $(`#error-password`).html(err.response.data.message)
                 }
+                Toastify({
+                    node: $("#basic-non-sticky-notification-content").clone().removeClass("hidden")[0],
+                    duration: 3000,
+                    newWindow: true,
+                    close: true,
+                    gravity: "top",
+                    position: "right",
+                    stopOnFocus: true
+                }).showToast();
             })
+        }
 
-            $('#btn-login').on('click', function() {
+        $('#login-form').on('keyup', function(e) {
+            if (e.keyCode === 13) {
                 login()
-            })
-        })()
-    </script>
+            }
+        })
+
+        $('#btn-login').on('click', function() {
+            login()
+        })
+    })()
+</script>
 @endsection

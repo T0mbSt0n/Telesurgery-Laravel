@@ -8,6 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/2.18.8/mqtt.min.js"></script>
 <script src="{{ asset('js/mqtt.js') }}"></script>
 <script src="public/script.js"></script>
+<script src="{{ asset('js/toastify/toastify.min.js') }}"></script>
 
 <div class="intro-y flex items-center mt-8">
         <h2 class="text-lg font-medium mr-auto">Update Profile</h2>
@@ -71,7 +72,7 @@
                                 </div>
                                 <div class="col-span-12">
                                     <div class="mt-3">
-                                        <button type="submit" class="btn btn-primary w-20 mr-auto">Save</button>
+                                        <button id="success-notification-toggle" type="submit" class="btn btn-primary w-20 mr-auto">Save</button>
                                     </div>
                                 </div>
                             </form>
@@ -88,7 +89,7 @@
                                 @csrf
                                 @method('POST')
                                     <input type="file" name="photo" id="photo" class="form-control" accept="image/*">
-                                    <button type="submit" class="btn btn-primary w-full">Change Photo</button>
+                                    <button id="success-notification-toggle" type="submit" class="btn btn-primary w-full">Change Photo</button>
                                 </form>
                             </div>
                         </div>
@@ -127,16 +128,87 @@
                         </div>
                         <div class="col-span-12">
                             <div class="mt-3">
-                                <button type="submit" class="btn btn-primary w-20 mr-auto">Save</button>
+                                <button id= "success-notification-toggle" type="submit" class="btn btn-primary w-20 mr-auto">Save</button>
                             </div>
                         </div>
                     </form>
                 </div>
             </div>
             <!-- END: Personal Information -->
+                        <!-- BEGIN: Success Notification Content -->
+                        <div
+                            id="success-notification-content"
+                            class="toastify-content hidden flex"
+                        >
+                            <i class="text-success" data-lucide="check-circle"></i>
+                            <div class="ml-4 mr-4">
+                            <div class="font-medium">Profile Updated!</div>
+                            </div>
+                        </div>
+                        <!-- END: Success Notification Content -->
+                        <!-- BEGIN: Failed Notification Content -->
+                        <div
+                            id="failed-notification-content"
+                            class="toastify-content hidden flex"
+                        >
+                            <i class="text-danger" data-lucide="x-circle"></i>
+                            <div class="ml-4 mr-4">
+                            <div class="font-medium">Profile Update failed!</div>
+                            <div class="text-slate-500 mt-1">
+                                Please check the fileld form.
+                            </div>
+                            </div>
+                        </div>
+                        <!-- END: Failed Notification Content -->
+            
         </div>
     </div>
 @endsection
 
 @section('script')
+<script type="module">
+    (function () {
+        // Check if the notification has been shown before
+        if (getCookie("notificationShown") != "true") {
+            $("#success-notification-toggle").on("click", function () {
+                // Show the notification
+                Toastify({
+                    node: $("#success-notification-content").clone().removeClass("hidden")[0],
+                    duration: 5000,
+                    newWindow: true,
+                    close: true,
+                    gravity: "top",
+                    position: "right",
+                    stopOnFocus: true
+                }).showToast();
+                
+                // Set a cookie to indicate that the notification has been shown
+                setCookie("notificationShown", "true", 365);
+            });
+        }
+        
+        // Function to set a cookie
+        function setCookie(name, value, days) {
+            var expires = "";
+            if (days) {
+                var date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+        }
+        
+        // Function to get a cookie
+        function getCookie(name) {
+            var nameEQ = name + "=";
+            var ca = document.cookie.split(';');
+            for(var i=0;i < ca.length;i++) {
+                var c = ca[i];
+                while (c.charAt(0)==' ') c = c.substring(1,c.length);
+                if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+            }
+            return null;
+        }
+    })();
+</script>
 @endsection

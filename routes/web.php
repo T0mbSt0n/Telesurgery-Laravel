@@ -29,17 +29,12 @@ Route::controller(AuthController::class)->middleware('loggedin')->group(function
     Route::post('login', 'login')->name('login.check');
 });
 
-Route::post('/mqtt-data-motor-1', [mqttController::class,'data1']);
-Route::post('/mqtt-data-motor-2', [mqttController::class,'data2']);
-Route::post('/mqtt-data-motor-3', [mqttController::class,'data3']);
-Route::post('/mqtt-data-motor-4', [mqttController::class,'data4']);
-Route::post('/mqtt-data-motor-5', [mqttController::class,'data5']);
+Route::post('/mqtt-data-motor', [mqttController::class,'data1']);
+Route::post('/mqtt-data-haptic', [mqttController::class,'data2']);
+Route::post('/mqtt-data-gyro', [mqttController::class,'data3']);
 Route::get('/download1', [DownloadController::class, 'data1']);
 Route::get('/download2', [DownloadController::class, 'data2']);
 Route::get('/download3', [DownloadController::class, 'data3']);
-Route::get('/download4', [DownloadController::class, 'data4']);
-Route::get('/download5', [DownloadController::class, 'data5']);
-Route::get('/download6', [DownloadController::class, 'data6']);
 Route::post('/peer-id', function () {
     return response()->json(['peerId' => uniqid()]);
 });
@@ -52,22 +47,23 @@ Route::get('/stream', function () {
     return view('stream');
 });
 
+Route::middleware(['auth', 'can.create.accounts'])->group(function () {
+    Route::get('add-user', [PageController::class, 'addusers'])->name('add-user');
+    Route::post('addnew',[AuthController::class, 'register_action'])->name('register.action');
+});
+
 Route::get('register',[AuthController::class, 'registerView'])->name('register.index');
-Route::post('register',[AuthController::class, 'register_action'])->name('register.action');
 Route::post('change-pass',[AuthController::class, 'updatePassword'])->name('updtpass.action');
 Route::get('/', function () {
     return redirect('/' . Str::uuid());
-});
-Route::get('default', function () {
-    return redirect('meeting-room.default');
 });
 
 
 Route::middleware('auth')->group(function() {
     Route::get('logout', [AuthController::class, 'logout'])->name('logout');
     Route::post('profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::post('meeting-room', [MeetingController::class, 'handleMeetingRoom'])->name ('meeting.room');
-    Route::get('/meeting-room/{roomName}/stream', [MeetingController::class, 'streamMeetingRoom'])->name('meeting-room.stream');
+    Route::post('meeting', [MeetingController::class, 'handleMeetingRoom'])->name ('meeting.room');
+    Route::get('meeting/{roomName}', [MeetingController::class, 'streamMeetingRoom'])->name('meeting-room.stream');
     Route::post('profile/picture', [ProfileController::class, 'picture'])->name('picture.update');
     Route::controller(PageController::class)->group(function() {
         Route::get('/', 'dashboardOverview1')->name('dashboard-overview-1');
@@ -75,7 +71,6 @@ Route::middleware('auth')->group(function() {
         Route::get('error-page-page', 'errorPage')->name('error-page');
         Route::get('update-profile-page', 'updateProfile')->name('update-profile');
         Route::get('change-password-page', 'changePassword')->name('change-password');
-        Route::get('add-user', 'addusers')->name('add-user');
         Route::get('tabulator-page', 'tabulator')->name('tabulator');
         Route::get('slide-over-page', 'slideOver')->name('slide-over');
         Route::get('notification-page', 'notification')->name('notification');

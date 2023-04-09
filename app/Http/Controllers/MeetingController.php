@@ -21,10 +21,11 @@ class MeetingController extends Controller
         }
     
         // Redirect the user to the appropriate URL for the meeting room
-        return redirect('/meeting-room/' . urlencode($room->name));
+        return redirect('/meeting/' . urlencode($room->name));
     }
     public function streamMeetingRoom($roomName)
     {
-        return view('meeting-room.default', compact('roomName'));
+        return view('meeting.stream', compact('roomName'));
+        
     }
 }

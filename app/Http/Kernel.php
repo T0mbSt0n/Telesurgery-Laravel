@@ -71,5 +71,6 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'registered' => \App\Http\Middleware\Registered::class,
+        'can.create.accounts' => \App\Http\Middleware\CanCreateAccounts::class,
     ];
 }

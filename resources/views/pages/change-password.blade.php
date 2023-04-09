@@ -72,6 +72,13 @@
                             <button type="submit" class="btn btn-primary w-20 mr-auto">Save</button>
                         </div>
                     </div>
+                    @if(session('success'))
+                        <div class="alert alert-success">{{ session('success') }}</div>
+                    @endif
+
+                    @if(session('failure'))
+                        <div class="alert alert-danger">{{ session('failure') }}</div>
+                    @endif
                 </form>
             </div>
             <!-- END: Change Password -->

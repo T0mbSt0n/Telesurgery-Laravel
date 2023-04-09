@@ -803,11 +803,10 @@ class PageController extends Controller
     public function slider()
     {   
         $tables = [
-            'mqtt_data_1',
-            'mqtt_data_2',
-            'mqtt_data_3',
-            'mqtt_data_4',
-            'mqtt_data_5',
+            'mqtt_data_motor',
+            'mqtt_data_haptic',
+            'mqtt_data_gyro',
+
             //'mqtt_data_6',
         ];
         

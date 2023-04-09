@@ -11,66 +11,49 @@ class mqttController extends Controller
 {
         public function data1(Request $request)
         {
-            $mqtt = $request->validate([
+            $mqtt_motor = $request->validate([
                 'motor1' => '',
-                'haptic1' => '',
+                'motor2' => '',
+                'motor3' => '',
+                'motor4' => '',
+                'motor5' => '',
+                'motor6' => '',
+                'motor7' => '',
+                'motor8' => '',
+                'motor9' => '',
+                'motor10' => '',
                 'published_at' => 'date'
             ]);
     
-            DB::table('mqtt_data_1')->insert($mqtt);
+            DB::table('mqtt_data_motor')->insert($mqtt_motor);
         }
 
         public function data2(Request $request)
         {
-            $mqtt = $request->validate([
-                'morob2' => '',
-                'hapdev2' => '',
+            $mqtt_haptic = $request->validate([
+                'haptic1' => '',
+                'haptic2' => '',
+                'haptic3' => '',
+                'haptic4' => '',
+                'haptic5' => '',
+                'haptic6' => '',
+                'haptic7' => '',
+                'haptic8' => '',
+                'haptic9' => '',
+                'haptic10' => '',
                 'published_at' => 'date'
             ]);
     
-            DB::table('mqtt_data_2')->insert($mqtt);
+            DB::table('mqtt_data_haptic')->insert($mqtt_haptic);
         }
 
         public function data3(Request $request)
         {
-            $mqtt = $request->validate([
-                'morob3' => '',
-                'hapdev3' => '',
+            $mqtt_gyro = $request->validate([
+                'data' => '',
                 'published_at' => 'date'
             ]);
     
-            DB::table('mqtt_data_3')->insert($mqtt);
-        }
-
-        public function data4(Request $request)
-        {
-            $mqtt = $request->validate([
-                'morob4' => '',
-                'hapdev4' => '',
-                'published_at' => 'date'
-            ]);
-    
-            DB::table('mqtt_data_4')->insert($mqtt);
-        }
-
-        public function data5(Request $request)
-        {
-            $mqtt = $request->validate([
-                'morob5' => '',
-                'hapdev5' => '',
-                'published_at' => 'date'
-            ]);
-    
-            DB::table('mqtt_data_5')->insert($mqtt);
-        }
-
-        public function data6(Request $request)
-        {
-            $mqtt = $request->validate([
-                'gyro' => 'required|string',
-                'published_at' => 'required|date'
-            ]);
-    
-            DB::table('mqtt_data_6')->insert($mqtt);
+            DB::table('mqtt_data_gyro')->insert($mqtt_gyro);
         }
 }
