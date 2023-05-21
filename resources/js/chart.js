@@ -1276,25 +1276,62 @@ import Chart from "chart.js/auto";
         }
     });
 
-if ($("#line-chart-widget-1").length) {
+function getCurrentTime() {
+        const now = new Date();
+        const hours = now.getHours().toString().padStart(2, "0");
+        const minutes = now.getMinutes().toString().padStart(2, "0");
+        return hours + ":" + minutes;
+    }
 
+if ($("#line-chart-widget-1").length) {
+        let maxDataPoints =14;
         client.on('message', function(topic, message) {
             console.log('Received message:', message.toString());
             if (topic == 'TA-hapdevs') {
                 var allHapdev = message.toString().split(',');
                 var haptic1 = parseFloat(allHapdev[0]);
-                myChart1.data.datasets[0].data.push(parseFloat(haptic1));
-                myChart1.data.labels.push(new Date().toLocaleTimeString());
-                myChart1.update();
-
+                myChart1.data.datasets[0].data.push({
+                    x: new Date().getTime(),
+                    y: haptic1
+                });
+    
+                if (myChart1.data.datasets[1].data.length < myChart1.data.datasets[0].data.length) {
+                    let latestX = myChart1.data.datasets[0].data[myChart1.data.datasets[0].data.length - 1].x;
+                    myChart1.data.datasets[1].data.push({
+                        x: latestX,
+                        y: null
+                    });
+                }
             } else if (topic === 'TA-morobs') {
                 var allData = message.toString().split(',');
                 var motor1 = parseFloat(allData[0]);
-
-                myChart1.data.datasets[1].data.push(parseFloat(motor1));
-                myChart1.data.labels.push(new Date().toLocaleTimeString());
-                myChart1.update();
+    
+                myChart1.data.datasets[1].data.push({
+                    x: new Date().getTime(),
+                    y: motor1
+                });
+    
+                if (myChart1.data.datasets[0].data.length < myChart1.data.datasets[1].data.length) {
+                    let latestX = myChart1.data.datasets[1].data[myChart1.data.datasets[1].data.length - 1].x;
+                    myChart1.data.datasets[0].data.push({
+                        x: latestX,
+                        y: null
+                    });
+                }
             }
+    
+            // Limit data to maximum number of points
+            if (myChart1.data.datasets[0].data.length > maxDataPoints) {
+                myChart1.data.datasets[0].data.shift(); // Remove oldest data point for Haptic 1
+            }
+    
+            if (myChart1.data.datasets[1].data.length > maxDataPoints) {
+                myChart1.data.datasets[1].data.shift(); // Remove oldest data point for Motor 1
+            }
+    
+            myChart1.data.labels = myChart1.data.datasets[0].data.map(point => new Date(point.x).toLocaleTimeString());
+    
+            myChart1.update();
                 
         });
     
@@ -1341,11 +1378,8 @@ if ($("#line-chart-widget-1").length) {
                             },
                             font: colors.slate["500"](0.8),
                             callback: function (value, index, values) {
-                                // convert timestamp to hour and minute
-                                const date = new Date(value);
-                                const hours = date.getHours().toString().padStart(2, "0");
-                                const minutes = date.getMinutes().toString().padStart(2, "0");
-                                return hours + ":" + minutes;
+                                // Use getCurrentTime() function to get the current time
+                                return getCurrentTime();
                             },
                         },
                         grid: {
@@ -1379,25 +1413,54 @@ if ($("#line-chart-widget-1").length) {
     }
 
 if ($("#line-chart-widget-2").length) {
-        
+    let maxDataPoints =14;
     client.on('message', function(topic, message) {
         console.log('Received message:', message.toString());
         if (topic == 'TA-hapdevs') {
             var allHapdev = message.toString().split(',');
             var haptic2 = parseFloat(allHapdev[1]);
-            myChart2.data.datasets[0].data.push(parseFloat(haptic2));
-            myChart2.data.labels.push(new Date().toLocaleTimeString());
-            myChart2.update();
-        // Split the message by comma to get data for each motor
+            myChart2.data.datasets[0].data.push({
+                x: new Date().getTime(),
+                y: haptic2
+            });
 
+            if (myChart2.data.datasets[1].data.length < myChart2.data.datasets[0].data.length) {
+                let latestX = myChart2.data.datasets[0].data[myChart2.data.datasets[0].data.length - 1].x;
+                myChart2.data.datasets[1].data.push({
+                    x: latestX,
+                    y: null
+                });
+            }
         } else if (topic === 'TA-morobs') {
             var allData = message.toString().split(',');
             var motor2 = parseFloat(allData[1]);
 
-            myChart2.data.datasets[1].data.push(parseFloat(motor2));
-            myChart2.data.labels.push(new Date().toLocaleTimeString());
-            myChart2.update();
+            myChart2.data.datasets[1].data.push({
+                x: new Date().getTime(),
+                y: motor2
+            });
+
+            if (myChart2.data.datasets[0].data.length < myChart2.data.datasets[1].data.length) {
+                let latestX = myChart2.data.datasets[1].data[myChart2.data.datasets[1].data.length - 1].x;
+                myChart2.data.datasets[0].data.push({
+                    x: latestX,
+                    y: null
+                });
+            }
         }
+
+        // Limit data to maximum number of points
+        if (myChart2.data.datasets[0].data.length > maxDataPoints) {
+            myChart2.data.datasets[0].data.shift(); // Remove oldest data point for Haptic 1
+        }
+
+        if (myChart2.data.datasets[1].data.length > maxDataPoints) {
+            myChart2.data.datasets[1].data.shift(); // Remove oldest data point for Motor 1
+        }
+
+        myChart2.data.labels = myChart2.data.datasets[0].data.map(point => new Date(point.x).toLocaleTimeString());
+
+        myChart2.update();
             
     });
     
@@ -1444,11 +1507,8 @@ if ($("#line-chart-widget-2").length) {
                             },
                             font: colors.slate["500"](0.8),
                             callback: function (value, index, values) {
-                                // convert timestamp to hour and minute
-                                const date = new Date(value);
-                                const hours = date.getHours().toString().padStart(2, "0");
-                                const minutes = date.getMinutes().toString().padStart(2, "0");
-                                return hours + ":" + minutes;
+                                // Use getCurrentTime() function to get the current time
+                                return getCurrentTime();
                             },
                         },
                         grid: {
@@ -1483,24 +1543,54 @@ if ($("#line-chart-widget-2").length) {
 
 if ($("#line-chart-widget-3").length) {
 
+    let maxDataPoints =14;
     client.on('message', function(topic, message) {
         console.log('Received message:', message.toString());
         if (topic == 'TA-hapdevs') {
             var allHapdev = message.toString().split(',');
             var haptic3 = parseFloat(allHapdev[2]);
-            myChart3.data.datasets[0].data.push(parseFloat(haptic3));
-            myChart3.data.labels.push(new Date().toLocaleTimeString());
-            myChart3.update();
+            myChart3.data.datasets[0].data.push({
+                x: new Date().getTime(),
+                y: haptic3
+            });
 
+            if (myChart3.data.datasets[1].data.length < myChart3.data.datasets[0].data.length) {
+                let latestX = myChart3.data.datasets[0].data[myChart3.data.datasets[0].data.length - 1].x;
+                myChart3.data.datasets[1].data.push({
+                    x: latestX,
+                    y: null
+                });
+            }
         } else if (topic === 'TA-morobs') {
-        // Split the message by comma to get data for each motor
             var allData = message.toString().split(',');
             var motor3 = parseFloat(allData[2]);
 
-            myChart3.data.datasets[1].data.push(parseFloat(motor3));
-            myChart3.data.labels.push(new Date().toLocaleTimeString());
-            myChart3.update();
+            myChart3.data.datasets[1].data.push({
+                x: new Date().getTime(),
+                y: motor3
+            });
+
+            if (myChart3.data.datasets[0].data.length < myChart3.data.datasets[1].data.length) {
+                let latestX = myChart3.data.datasets[1].data[myChart3.data.datasets[1].data.length - 1].x;
+                myChart3.data.datasets[0].data.push({
+                    x: latestX,
+                    y: null
+                });
+            }
         }
+
+        // Limit data to maximum number of points
+        if (myChart3.data.datasets[0].data.length > maxDataPoints) {
+            myChart3.data.datasets[0].data.shift(); // Remove oldest data point for Haptic 1
+        }
+
+        if (myChart3.data.datasets[1].data.length > maxDataPoints) {
+            myChart3.data.datasets[1].data.shift(); // Remove oldest data point for Motor 1
+        }
+
+        myChart3.data.labels = myChart3.data.datasets[0].data.map(point => new Date(point.x).toLocaleTimeString());
+
+        myChart3.update();
             
     });
     
@@ -1585,25 +1675,54 @@ if ($("#line-chart-widget-3").length) {
     }
 
     if ($("#line-chart-widget-4").length) {
-
+        let maxDataPoints =14;
         client.on('message', function(topic, message) {
             console.log('Received message:', message.toString());
             if (topic == 'TA-hapdevs') {
                 var allHapdev = message.toString().split(',');
                 var haptic4 = parseFloat(allHapdev[3]);
-                myChart4.data.datasets[0].data.push(parseFloat(haptic4));
-                myChart4.data.labels.push(new Date().toLocaleTimeString());
-                myChart4.update();
-
+                myChart4.data.datasets[0].data.push({
+                    x: new Date().getTime(),
+                    y: haptic4
+                });
+    
+                if (myChart4.data.datasets[1].data.length < myChart4.data.datasets[0].data.length) {
+                    let latestX = myChart4.data.datasets[0].data[myChart4.data.datasets[0].data.length - 1].x;
+                    myChart4.data.datasets[1].data.push({
+                        x: latestX,
+                        y: null
+                    });
+                }
             } else if (topic === 'TA-morobs') {
-                 // Split the message by comma to get data for each motor
                 var allData = message.toString().split(',');
                 var motor4 = parseFloat(allData[3]);
     
-                myChart4.data.datasets[1].data.push(parseFloat(motor4));
-                myChart4.data.labels.push(new Date().toLocaleTimeString());
-                myChart4.update();
+                myChart4.data.datasets[1].data.push({
+                    x: new Date().getTime(),
+                    y: motor4
+                });
+    
+                if (myChart4.data.datasets[0].data.length < myChart4.data.datasets[1].data.length) {
+                    let latestX = myChart4.data.datasets[1].data[myChart4.data.datasets[1].data.length - 1].x;
+                    myChart4.data.datasets[0].data.push({
+                        x: latestX,
+                        y: null
+                    });
+                }
             }
+    
+            // Limit data to maximum number of points
+            if (myChart4.data.datasets[0].data.length > maxDataPoints) {
+                myChart4.data.datasets[0].data.shift(); // Remove oldest data point for Haptic 1
+            }
+    
+            if (myChart4.data.datasets[1].data.length > maxDataPoints) {
+                myChart4.data.datasets[1].data.shift(); // Remove oldest data point for Motor 1
+            }
+    
+            myChart4.data.labels = myChart4.data.datasets[0].data.map(point => new Date(point.x).toLocaleTimeString());
+    
+            myChart4.update();
                 
         });
     
@@ -1688,25 +1807,54 @@ if ($("#line-chart-widget-3").length) {
     }
 
     if ($("#line-chart-widget-5").length) {
-
+        let maxDataPoints =14;
         client.on('message', function(topic, message) {
             console.log('Received message:', message.toString());
             if (topic == 'TA-hapdevs') {
                 var allHapdev = message.toString().split(',');
                 var haptic5 = parseFloat(allHapdev[4]);
-                myChart5.data.datasets[0].data.push(parseFloat(haptic5));
-                myChart5.data.labels.push(new Date().toLocaleTimeString());
-                myChart5.update();
-            // Split the message by comma to get data for each motor
-
+                myChart5.data.datasets[0].data.push({
+                    x: new Date().getTime(),
+                    y: haptic5
+                });
+    
+                if (myChart5.data.datasets[1].data.length < myChart5.data.datasets[0].data.length) {
+                    let latestX = myChart5.data.datasets[0].data[myChart5.data.datasets[0].data.length - 1].x;
+                    myChart5.data.datasets[1].data.push({
+                        x: latestX,
+                        y: null
+                    });
+                }
             } else if (topic === 'TA-morobs') {
                 var allData = message.toString().split(',');
                 var motor5 = parseFloat(allData[4]);
     
-                myChart5.data.datasets[1].data.push(parseFloat(motor5));
-                myChart5.data.labels.push(new Date().toLocaleTimeString());
-                myChart5.update();
+                myChart5.data.datasets[1].data.push({
+                    x: new Date().getTime(),
+                    y: motor5
+                });
+    
+                if (myChart5.data.datasets[0].data.length < myChart5.data.datasets[1].data.length) {
+                    let latestX = myChart5.data.datasets[1].data[myChart5.data.datasets[1].data.length - 1].x;
+                    myChart5.data.datasets[0].data.push({
+                        x: latestX,
+                        y: null
+                    });
+                }
             }
+    
+            // Limit data to maximum number of points
+            if (myChart5.data.datasets[0].data.length > maxDataPoints) {
+                myChart5.data.datasets[0].data.shift(); // Remove oldest data point for Haptic 1
+            }
+    
+            if (myChart5.data.datasets[1].data.length > maxDataPoints) {
+                myChart5.data.datasets[1].data.shift(); // Remove oldest data point for Motor 1
+            }
+    
+            myChart5.data.labels = myChart5.data.datasets[0].data.map(point => new Date(point.x).toLocaleTimeString());
+    
+            myChart5.update();
                 
         });
     
@@ -1790,25 +1938,54 @@ if ($("#line-chart-widget-3").length) {
         
     }
     if ($("#line-chart-widget-6").length) {
-
+        let maxDataPoints =14;
         client.on('message', function(topic, message) {
             console.log('Received message:', message.toString());
             if (topic == 'TA-hapdevs') {
                 var allHapdev = message.toString().split(',');
                 var haptic6 = parseFloat(allHapdev[5]);
-                myChart6.data.datasets[0].data.push(parseFloat(haptic6));
-                myChart6.data.labels.push(new Date().toLocaleTimeString());
-                myChart6.update();
-            // Split the message by comma to get data for each motor
-
+                myChart6.data.datasets[0].data.push({
+                    x: new Date().getTime(),
+                    y: haptic6
+                });
+    
+                if (myChart6.data.datasets[1].data.length < myChart6.data.datasets[0].data.length) {
+                    let latestX = myChart6.data.datasets[0].data[myChart6.data.datasets[0].data.length - 1].x;
+                    myChart6.data.datasets[1].data.push({
+                        x: latestX,
+                        y: null
+                    });
+                }
             } else if (topic === 'TA-morobs') {
                 var allData = message.toString().split(',');
                 var motor6 = parseFloat(allData[5]);
-
-                myChart6.data.datasets[1].data.push(parseFloat(motor6));
-                myChart6.data.labels.push(new Date().toLocaleTimeString());
-                myChart6.update();
+    
+                myChart6.data.datasets[1].data.push({
+                    x: new Date().getTime(),
+                    y: motor6
+                });
+    
+                if (myChart6.data.datasets[0].data.length < myChart6.data.datasets[1].data.length) {
+                    let latestX = myChart6.data.datasets[1].data[myChart6.data.datasets[1].data.length - 1].x;
+                    myChart6.data.datasets[0].data.push({
+                        x: latestX,
+                        y: null
+                    });
+                }
             }
+    
+            // Limit data to maximum number of points
+            if (myChart6.data.datasets[0].data.length > maxDataPoints) {
+                myChart6.data.datasets[0].data.shift(); // Remove oldest data point for Haptic 1
+            }
+    
+            if (myChart6.data.datasets[1].data.length > maxDataPoints) {
+                myChart6.data.datasets[1].data.shift(); // Remove oldest data point for Motor 1
+            }
+    
+            myChart6.data.labels = myChart6.data.datasets[0].data.map(point => new Date(point.x).toLocaleTimeString());
+    
+            myChart6.update();
                 
         });
     
@@ -1893,27 +2070,56 @@ if ($("#line-chart-widget-3").length) {
     }
 
     if ($("#line-chart-widget-7").length) {
-        
-    client.on('message', function(topic, message) {
-        console.log('Received message:', message.toString());
-        if (topic == 'TA-hapdevs') {
-            var allHapdev = message.toString().split(',');
-            var haptic7 = parseFloat(allHapdev[6]);
-            myChart7.data.datasets[0].data.push(parseFloat(haptic7));
-            myChart7.data.labels.push(new Date().toLocaleTimeString());
+        let maxDataPoints =14;
+        client.on('message', function(topic, message) {
+            console.log('Received message:', message.toString());
+            if (topic == 'TA-hapdevs') {
+                var allHapdev = message.toString().split(',');
+                var haptic7 = parseFloat(allHapdev[6]);
+                myChart7.data.datasets[0].data.push({
+                    x: new Date().getTime(),
+                    y: haptic7
+                });
+    
+                if (myChart7.data.datasets[1].data.length < myChart7.data.datasets[0].data.length) {
+                    let latestX = myChart7.data.datasets[0].data[myChart7.data.datasets[0].data.length - 1].x;
+                    myChart7.data.datasets[1].data.push({
+                        x: latestX,
+                        y: null
+                    });
+                }
+            } else if (topic === 'TA-morobs') {
+                var allData = message.toString().split(',');
+                var motor7 = parseFloat(allData[6]);
+    
+                myChart7.data.datasets[1].data.push({
+                    x: new Date().getTime(),
+                    y: motor7
+                });
+    
+                if (myChart7.data.datasets[0].data.length < myChart7.data.datasets[1].data.length) {
+                    let latestX = myChart7.data.datasets[1].data[myChart7.data.datasets[1].data.length - 1].x;
+                    myChart7.data.datasets[0].data.push({
+                        x: latestX,
+                        y: null
+                    });
+                }
+            }
+    
+            // Limit data to maximum number of points
+            if (myChart7.data.datasets[0].data.length > maxDataPoints) {
+                myChart7.data.datasets[0].data.shift(); // Remove oldest data point for Haptic 1
+            }
+    
+            if (myChart7.data.datasets[1].data.length > maxDataPoints) {
+                myChart7.data.datasets[1].data.shift(); // Remove oldest data point for Motor 1
+            }
+    
+            myChart7.data.labels = myChart7.data.datasets[0].data.map(point => new Date(point.x).toLocaleTimeString());
+    
             myChart7.update();
-        // Split the message by comma to get data for each motor
-
-        } else if (topic === 'TA-morobs') {
-            var allData = message.toString().split(',');
-            var motor7 = parseFloat(allData[6]);
-
-            myChart7.data.datasets[1].data.push(parseFloat(motor7));
-            myChart7.data.labels.push(new Date().toLocaleTimeString());
-            myChart7.update();
-        }
-            
-    });
+                
+        });
     
         let ctx = $("#line-chart-widget-7")[0].getContext("2d");
         let myChart7 = new Chart(ctx, {
@@ -1996,25 +2202,54 @@ if ($("#line-chart-widget-3").length) {
     }
 
 if ($("#line-chart-widget-8").length) {
-
+    let maxDataPoints =14;
     client.on('message', function(topic, message) {
         console.log('Received message:', message.toString());
         if (topic == 'TA-hapdevs') {
             var allHapdev = message.toString().split(',');
             var haptic8 = parseFloat(allHapdev[7]);
-            myChart8.data.datasets[0].data.push(parseFloat(haptic8));
-            myChart8.data.labels.push(new Date().toLocaleTimeString());
-            myChart8.update();
-        // Split the message by comma to get data for each motor
+            myChart8.data.datasets[0].data.push({
+                x: new Date().getTime(),
+                y: haptic8
+            });
 
+            if (myChart8.data.datasets[1].data.length < myChart8.data.datasets[0].data.length) {
+                let latestX = myChart8.data.datasets[0].data[myChart8.data.datasets[0].data.length - 1].x;
+                myChart8.data.datasets[1].data.push({
+                    x: latestX,
+                    y: null
+                });
+            }
         } else if (topic === 'TA-morobs') {
             var allData = message.toString().split(',');
             var motor8 = parseFloat(allData[7]);
 
-            myChart8.data.datasets[1].data.push(parseFloat(motor8));
-            myChart8.data.labels.push(new Date().toLocaleTimeString());
-            myChart8.update();
+            myChart8.data.datasets[1].data.push({
+                x: new Date().getTime(),
+                y: motor8
+            });
+
+            if (myChart8.data.datasets[0].data.length < myChart8.data.datasets[1].data.length) {
+                let latestX = myChart8.data.datasets[1].data[myChart8.data.datasets[1].data.length - 1].x;
+                myChart8.data.datasets[0].data.push({
+                    x: latestX,
+                    y: null
+                });
+            }
         }
+
+        // Limit data to maximum number of points
+        if (myChart8.data.datasets[0].data.length > maxDataPoints) {
+            myChart8.data.datasets[0].data.shift(); // Remove oldest data point for Haptic 1
+        }
+
+        if (myChart8.data.datasets[1].data.length > maxDataPoints) {
+            myChart8.data.datasets[1].data.shift(); // Remove oldest data point for Motor 1
+        }
+
+        myChart8.data.labels = myChart8.data.datasets[0].data.map(point => new Date(point.x).toLocaleTimeString());
+
+        myChart8.update();
             
     });
     
@@ -2099,25 +2334,54 @@ if ($("#line-chart-widget-8").length) {
     }
 
     if ($("#line-chart-widget-9").length) {
-
+        let maxDataPoints =14;
         client.on('message', function(topic, message) {
             console.log('Received message:', message.toString());
             if (topic == 'TA-hapdevs') {
                 var allHapdev = message.toString().split(',');
                 var haptic9 = parseFloat(allHapdev[8]);
-                myChart9.data.datasets[0].data.push(parseFloat(haptic9));
-                myChart9.data.labels.push(new Date().toLocaleTimeString());
-                myChart9.update();
-            // Split the message by comma to get data for each motor
- 
+                myChart9.data.datasets[0].data.push({
+                    x: new Date().getTime(),
+                    y: haptic9
+                });
+    
+                if (myChart9.data.datasets[1].data.length < myChart9.data.datasets[0].data.length) {
+                    let latestX = myChart9.data.datasets[0].data[myChart9.data.datasets[0].data.length - 1].x;
+                    myChart9.data.datasets[1].data.push({
+                        x: latestX,
+                        y: null
+                    });
+                }
             } else if (topic === 'TA-morobs') {
                 var allData = message.toString().split(',');
                 var motor9 = parseFloat(allData[8]);
     
-                myChart9.data.datasets[1].data.push(parseFloat(motor9));
-                myChart9.data.labels.push(new Date().toLocaleTimeString());
-                myChart9.update();
+                myChart9.data.datasets[1].data.push({
+                    x: new Date().getTime(),
+                    y: motor9
+                });
+    
+                if (myChart9.data.datasets[0].data.length < myChart9.data.datasets[1].data.length) {
+                    let latestX = myChart9.data.datasets[1].data[myChart9.data.datasets[1].data.length - 1].x;
+                    myChart9.data.datasets[0].data.push({
+                        x: latestX,
+                        y: null
+                    });
+                }
             }
+    
+            // Limit data to maximum number of points
+            if (myChart9.data.datasets[0].data.length > maxDataPoints) {
+                myChart9.data.datasets[0].data.shift(); // Remove oldest data point for Haptic 1
+            }
+    
+            if (myChart9.data.datasets[1].data.length > maxDataPoints) {
+                myChart9.data.datasets[1].data.shift(); // Remove oldest data point for Motor 1
+            }
+    
+            myChart9.data.labels = myChart9.data.datasets[0].data.map(point => new Date(point.x).toLocaleTimeString());
+    
+            myChart9.update();
                 
         });
     
@@ -2202,25 +2466,54 @@ if ($("#line-chart-widget-8").length) {
     }
 
     if ($("#line-chart-widget-10").length) {
-
+        let maxDataPoints =14;
         client.on('message', function(topic, message) {
             console.log('Received message:', message.toString());
             if (topic == 'TA-hapdevs') {
                 var allHapdev = message.toString().split(',');
                 var haptic10 = parseFloat(allHapdev[9]);
-                myChart10.data.datasets[0].data.push(parseFloat(haptic10));
-                myChart10.data.labels.push(new Date().toLocaleTimeString());
-                myChart10.update();
-            // Split the message by comma to get data for each motor
-
+                myChart10.data.datasets[0].data.push({
+                    x: new Date().getTime(),
+                    y: haptic10
+                });
+    
+                if (myChart10.data.datasets[1].data.length < myChart10.data.datasets[0].data.length) {
+                    let latestX = myChart10.data.datasets[0].data[myChart10.data.datasets[0].data.length - 1].x;
+                    myChart10.data.datasets[1].data.push({
+                        x: latestX,
+                        y: null
+                    });
+                }
             } else if (topic === 'TA-morobs') {
                 var allData = message.toString().split(',');
                 var motor10 = parseFloat(allData[9]);
     
-                myChart10.data.datasets[1].data.push(parseFloat(motor10));
-                myChart10.data.labels.push(new Date().toLocaleTimeString());
-                myChart10.update();
+                myChart10.data.datasets[1].data.push({
+                    x: new Date().getTime(),
+                    y: motor10
+                });
+    
+                if (myChart10.data.datasets[0].data.length < myChart10.data.datasets[1].data.length) {
+                    let latestX = myChart10.data.datasets[1].data[myChart10.data.datasets[1].data.length - 1].x;
+                    myChart10.data.datasets[0].data.push({
+                        x: latestX,
+                        y: null
+                    });
+                }
             }
+    
+            // Limit data to maximum number of points
+            if (myChart10.data.datasets[0].data.length > maxDataPoints) {
+                myChart10.data.datasets[0].data.shift(); // Remove oldest data point for Haptic 1
+            }
+    
+            if (myChart10.data.datasets[1].data.length > maxDataPoints) {
+                myChart10.data.datasets[1].data.shift(); // Remove oldest data point for Motor 1
+            }
+    
+            myChart10.data.labels = myChart10.data.datasets[0].data.map(point => new Date(point.x).toLocaleTimeString());
+    
+            myChart10.update();
                 
         });
     
