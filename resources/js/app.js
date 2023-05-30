@@ -13,6 +13,8 @@ import "@left4code/tw-starter/dist/js/alert";
 import "@left4code/tw-starter/dist/js/dropdown";
 import "@left4code/tw-starter/dist/js/modal";
 import "@left4code/tw-starter/dist/js/tab";
+import "chartjs-plugin-streaming";
+import "moment";
 
 /*
  |--------------------------------------------------------------------------

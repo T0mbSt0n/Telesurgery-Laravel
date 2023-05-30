@@ -1,6 +1,9 @@
 import helper from "./helper";
 import colors from "./colors";
 import Chart from "chart.js/auto";
+import 'chartjs-adapter-luxon';
+import ChartStreaming from 'chartjs-plugin-streaming';
+Chart.register(ChartStreaming);
 
 (function () {
     "use strict";
@@ -231,6 +234,8 @@ import Chart from "chart.js/auto";
                 },
                 scales: {
                     x: {
+                        type : 'realtime',
+
                         ticks: {
                             display: false,
                         },
@@ -1282,58 +1287,29 @@ function getCurrentTime() {
         const minutes = now.getMinutes().toString().padStart(2, "0");
         return hours + ":" + minutes;
     }
-
 if ($("#line-chart-widget-1").length) {
-        let maxDataPoints =14;
-        client.on('message', function(topic, message) {
-            console.log('Received message:', message.toString());
-            if (topic == 'TA-hapdevs') {
-                var allHapdev = message.toString().split(',');
-                var haptic1 = parseFloat(allHapdev[0]);
-                myChart1.data.datasets[0].data.push({
-                    x: new Date().getTime(),
-                    y: haptic1
-                });
-    
-                if (myChart1.data.datasets[1].data.length < myChart1.data.datasets[0].data.length) {
-                    let latestX = myChart1.data.datasets[0].data[myChart1.data.datasets[0].data.length - 1].x;
-                    myChart1.data.datasets[1].data.push({
-                        x: latestX,
-                        y: null
-                    });
-                }
-            } else if (topic === 'TA-morobs') {
-                var allData = message.toString().split(',');
-                var motor1 = parseFloat(allData[0]);
-    
-                myChart1.data.datasets[1].data.push({
-                    x: new Date().getTime(),
-                    y: motor1
-                });
-    
-                if (myChart1.data.datasets[0].data.length < myChart1.data.datasets[1].data.length) {
-                    let latestX = myChart1.data.datasets[1].data[myChart1.data.datasets[1].data.length - 1].x;
-                    myChart1.data.datasets[0].data.push({
-                        x: latestX,
-                        y: null
-                    });
-                }
-            }
-    
-            // Limit data to maximum number of points
-            if (myChart1.data.datasets[0].data.length > maxDataPoints) {
-                myChart1.data.datasets[0].data.shift(); // Remove oldest data point for Haptic 1
-            }
-    
-            if (myChart1.data.datasets[1].data.length > maxDataPoints) {
-                myChart1.data.datasets[1].data.shift(); // Remove oldest data point for Motor 1
-            }
-    
-            myChart1.data.labels = myChart1.data.datasets[0].data.map(point => new Date(point.x).toLocaleTimeString());
-    
-            myChart1.update();
-                
+    client.on("message", function (topic, message) {
+        console.log("Received message:", message.toString());
+        if (topic == "TA-hapdevs") {
+          var allHapdev = message.toString().split(",");
+          var haptic1 = parseFloat(allHapdev[0]);
+          myChart1.data.datasets[0].data.push({
+            x: Date.now(),
+            y: haptic1,
+          });
+        } else if (topic === "TA-morobs") {
+          var allData = message.toString().split(",");
+          var motor1 = parseFloat(allData[0]);
+          myChart1.data.datasets[1].data.push({
+            x: Date.now(),
+            y: motor1,
+          });
+        }
+      
+        myChart1.update({
+          preservation: true, // Preserve the existing chart data
         });
+      });
     
         let ctx = $("#line-chart-widget-1")[0].getContext("2d");
         let myChart1 = new Chart(ctx, {
@@ -1363,6 +1339,7 @@ if ($("#line-chart-widget-1").length) {
             },
             options: {
                 maintainAspectRatio: false,
+                responsive: true,
                 plugins: {
                     legend: {
                         labels: {
@@ -1372,15 +1349,27 @@ if ($("#line-chart-widget-1").length) {
                 },
                 scales: {
                     x: {
+                        type: "realtime",
+                        realtime: {
+                          duration: 20000,
+                          refresh: 1000,
+                          delay: 2000,
+                          pause: false,
+                          ttl: undefined,
+                          frameRate: 30,
+                          onRefresh: function (chart) {
+                            chart.data.datasets.forEach(function (dataset) {
+                              dataset.data = dataset.data.filter(function (data) {
+                                return data.x >= Date.now() - 20000; // Filter data based on the last 20 seconds
+                              });
+                            });
+                          },
+                        },
                         ticks: {
                             font: {
                                 size: "12",
                             },
                             font: colors.slate["500"](0.8),
-                            callback: function (value, index, values) {
-                                // Use getCurrentTime() function to get the current time
-                                return getCurrentTime();
-                            },
                         },
                         grid: {
                             display: false,
@@ -1412,188 +1401,143 @@ if ($("#line-chart-widget-1").length) {
         
     }
 
-if ($("#line-chart-widget-2").length) {
-    let maxDataPoints =14;
-    client.on('message', function(topic, message) {
-        console.log('Received message:', message.toString());
-        if (topic == 'TA-hapdevs') {
-            var allHapdev = message.toString().split(',');
-            var haptic2 = parseFloat(allHapdev[1]);
-            myChart2.data.datasets[0].data.push({
-                x: new Date().getTime(),
-                y: haptic2
-            });
-
-            if (myChart2.data.datasets[1].data.length < myChart2.data.datasets[0].data.length) {
-                let latestX = myChart2.data.datasets[0].data[myChart2.data.datasets[0].data.length - 1].x;
-                myChart2.data.datasets[1].data.push({
-                    x: latestX,
-                    y: null
-                });
-            }
-        } else if (topic === 'TA-morobs') {
-            var allData = message.toString().split(',');
-            var motor2 = parseFloat(allData[1]);
-
-            myChart2.data.datasets[1].data.push({
-                x: new Date().getTime(),
-                y: motor2
-            });
-
-            if (myChart2.data.datasets[0].data.length < myChart2.data.datasets[1].data.length) {
-                let latestX = myChart2.data.datasets[1].data[myChart2.data.datasets[1].data.length - 1].x;
-                myChart2.data.datasets[0].data.push({
-                    x: latestX,
-                    y: null
-                });
-            }
-        }
-
-        // Limit data to maximum number of points
-        if (myChart2.data.datasets[0].data.length > maxDataPoints) {
-            myChart2.data.datasets[0].data.shift(); // Remove oldest data point for Haptic 1
-        }
-
-        if (myChart2.data.datasets[1].data.length > maxDataPoints) {
-            myChart2.data.datasets[1].data.shift(); // Remove oldest data point for Motor 1
-        }
-
-        myChart2.data.labels = myChart2.data.datasets[0].data.map(point => new Date(point.x).toLocaleTimeString());
-
-        myChart2.update();
-            
-    });
     
-        let ctx = $("#line-chart-widget-2")[0].getContext("2d");
-        let myChart2 = new Chart(ctx, {
-            type: "line",
-            data: {
-                labels: [], // empty array to be populated with timestamp values
-                datasets: [
-                    {
-                        label: "Haptic 2",
-                        data: [], // empty array to be populated with MQTT data for Motor 1
-                        borderWidth: 2,
-                        borderColor: colors.primary(),
-                        backgroundColor: "transparent",
-                        pointBorderColor: "transparent",
-                        tension: 0.4,
-                    },
-                    {
-                        label: "Motor 2",
-                        data: [], // empty array to be populated with MQTT data for Haptic 1
-                        borderWidth: 2,
-                        borderColor: "red",
-                        backgroundColor: "transparent",
-                        pointBorderColor: "transparent",
-                        tension: 0.4,
-                    },
-                ],
-            },
-            options: {
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: colors.slate["500"](0.8),
-                        },
-                    },
-                },
-                scales: {
-                    x: {
-                        ticks: {
-                            font: {
-                                size: "12",
-                            },
-                            font: colors.slate["500"](0.8),
-                            callback: function (value, index, values) {
-                                // Use getCurrentTime() function to get the current time
-                                return getCurrentTime();
-                            },
-                        },
-                        grid: {
-                            display: false,
-                            drawBorder: false,
-                        },
-                    },
-                    y: {
-                        ticks: {
-                            font: {
-                                size: "12",
-                            },
-                            color: colors.slate["500"](0.8),
-                            callback: function (value, index, values) {
-                                return value + "°"; // add degree symbol to y-axis ticks
-                            },
-                        },
-                        grid: {
-                            color: $("html").hasClass("dark")
-                                ? colors.slate["500"](0.3)
-                                : colors.slate["300"](),
-                            borderDash: [2, 2],
-                            drawBorder: false,
-                        },
-                    },
-                },
-            },
-            
-        });
-        
-    }
-
-if ($("#line-chart-widget-3").length) {
-
-    let maxDataPoints =14;
-    client.on('message', function(topic, message) {
-        console.log('Received message:', message.toString());
-        if (topic == 'TA-hapdevs') {
-            var allHapdev = message.toString().split(',');
-            var haptic3 = parseFloat(allHapdev[2]);
-            myChart3.data.datasets[0].data.push({
-                x: new Date().getTime(),
-                y: haptic3
-            });
-
-            if (myChart3.data.datasets[1].data.length < myChart3.data.datasets[0].data.length) {
-                let latestX = myChart3.data.datasets[0].data[myChart3.data.datasets[0].data.length - 1].x;
-                myChart3.data.datasets[1].data.push({
-                    x: latestX,
-                    y: null
+        if ($("#line-chart-widget-2").length) {
+            client.on("message", function (topic, message) {
+                console.log("Received message:", message.toString());
+                if (topic == "TA-hapdevs") {
+                  var allHapdev = message.toString().split(",");
+                  var haptic2 = parseFloat(allHapdev[1]);
+                  myChart2.data.datasets[0].data.push({
+                    x: Date.now(),
+                    y: haptic2,
+                  });
+                } else if (topic === "TA-morobs") {
+                  var allData = message.toString().split(",");
+                  var motor2 = parseFloat(allData[1]);
+                  myChart2.data.datasets[1].data.push({
+                    x: Date.now(),
+                    y: motor2,
+                  });
+                }
+              
+                myChart2.update({
+                  preservation: true, // Preserve the existing chart data
                 });
-            }
-        } else if (topic === 'TA-morobs') {
-            var allData = message.toString().split(',');
-            var motor3 = parseFloat(allData[2]);
-
-            myChart3.data.datasets[1].data.push({
-                x: new Date().getTime(),
-                y: motor3
-            });
-
-            if (myChart3.data.datasets[0].data.length < myChart3.data.datasets[1].data.length) {
-                let latestX = myChart3.data.datasets[1].data[myChart3.data.datasets[1].data.length - 1].x;
-                myChart3.data.datasets[0].data.push({
-                    x: latestX,
-                    y: null
-                });
-            }
-        }
-
-        // Limit data to maximum number of points
-        if (myChart3.data.datasets[0].data.length > maxDataPoints) {
-            myChart3.data.datasets[0].data.shift(); // Remove oldest data point for Haptic 1
-        }
-
-        if (myChart3.data.datasets[1].data.length > maxDataPoints) {
-            myChart3.data.datasets[1].data.shift(); // Remove oldest data point for Motor 1
-        }
-
-        myChart3.data.labels = myChart3.data.datasets[0].data.map(point => new Date(point.x).toLocaleTimeString());
-
-        myChart3.update();
+              });
             
-    });
-    
+                let ctx = $("#line-chart-widget-2")[0].getContext("2d");
+                let myChart2 = new Chart(ctx, {
+                    type: "line",
+                    data: {
+                        labels: [], // empty array to be populated with timestamp values
+                        datasets: [
+                            {
+                                label: "Haptic 2",
+                                data: [], // empty array to be populated with MQTT data for Motor 1
+                                borderWidth: 2,
+                                borderColor: colors.primary(),
+                                backgroundColor: "transparent",
+                                pointBorderColor: "transparent",
+                                tension: 0.4,
+                            },
+                            {
+                                label: "Motor 2",
+                                data: [], // empty array to be populated with MQTT data for Haptic 1
+                                borderWidth: 2,
+                                borderColor: "red",
+                                backgroundColor: "transparent",
+                                pointBorderColor: "transparent",
+                                tension: 0.4,
+                            },
+                        ],
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: colors.slate["500"](0.8),
+                                },
+                            },
+                        },
+                        scales: {
+                            x: {
+                                type: "realtime",
+                                realtime: {
+                                  duration: 20000,
+                                  refresh: 1000,
+                                  delay: 2000,
+                                  pause: false,
+                                  ttl: undefined,
+                                  frameRate: 30,
+                                  onRefresh: function (chart) {
+                                    chart.data.datasets.forEach(function (dataset) {
+                                      dataset.data = dataset.data.filter(function (data) {
+                                        return data.x >= Date.now() - 20000; // Filter data based on the last 20 seconds
+                                      });
+                                    });
+                                  },
+                                },
+                                ticks: {
+                                    font: {
+                                        size: "12",
+                                    },
+                                    font: colors.slate["500"](0.8),
+                                },
+                                grid: {
+                                    display: false,
+                                    drawBorder: false,
+                                },
+                            },
+                            y: {
+                                ticks: {
+                                    font: {
+                                        size: "12",
+                                    },
+                                    color: colors.slate["500"](0.8),
+                                    callback: function (value, index, values) {
+                                        return value + "°"; // add degree symbol to y-axis ticks
+                                    },
+                                },
+                                grid: {
+                                    color: $("html").hasClass("dark")
+                                        ? colors.slate["500"](0.3)
+                                        : colors.slate["300"](),
+                                    borderDash: [2, 2],
+                                    drawBorder: false,
+                                },
+                            },
+                        },
+                    },
+                    
+                });
+                
+            }
+        if ($("#line-chart-widget-3").length) {
+            client.on("message", function (topic, message) {
+                console.log("Received message:", message.toString());
+                if (topic == "TA-hapdevs") {
+                    var allHapdev = message.toString().split(",");
+                    var haptic3 = parseFloat(allHapdev[2]);
+                    myChart3.data.datasets[0].data.push({
+                        x: Date.now(),
+                        y: haptic3,
+                    });
+                } else if (topic === "TA-morobs") {
+                    var allData = message.toString().split(",");
+                    var motor3 = parseFloat(allData[2]);
+                    myChart3.data.datasets[1].data.push({
+                        x: Date.now(),
+                        y: motor3,
+                    });
+                }
+                  
+                myChart3.update({
+                    preservation: true, // Preserve the existing chart data
+                });
+                  });
         let ctx = $("#line-chart-widget-3")[0].getContext("2d");
         let myChart3 = new Chart(ctx, {
             type: "line",
@@ -1622,6 +1566,7 @@ if ($("#line-chart-widget-3").length) {
             },
             options: {
                 maintainAspectRatio: false,
+                responsive: true,
                 plugins: {
                     legend: {
                         labels: {
@@ -1631,18 +1576,27 @@ if ($("#line-chart-widget-3").length) {
                 },
                 scales: {
                     x: {
+                        type: "realtime",
+                        realtime: {
+                            duration: 20000,
+                            refresh: 1000,
+                            delay: 2000,
+                            pause: false,
+                            ttl: undefined,
+                            frameRate: 30,
+                            onRefresh: function (chart) {
+                                chart.data.datasets.forEach(function (dataset) {
+                                dataset.data = dataset.data.filter(function (data) {
+                                return data.x >= Date.now() - 20000; // Filter data based on the last 20 seconds
+                                });
+                            });
+                            },
+                        },
                         ticks: {
                             font: {
                                 size: "12",
                             },
                             font: colors.slate["500"](0.8),
-                            callback: function (value, index, values) {
-                                // convert timestamp to hour and minute
-                                const date = new Date(value);
-                                const hours = date.getHours().toString().padStart(2, "0");
-                                const minutes = date.getMinutes().toString().padStart(2, "0");
-                                return hours + ":" + minutes;
-                            },
                         },
                         grid: {
                             display: false,
@@ -1669,590 +1623,483 @@ if ($("#line-chart-widget-3").length) {
                     },
                 },
             },
-            
-        });
-        
+                        
+        });           
     }
-
+    
     if ($("#line-chart-widget-4").length) {
-        let maxDataPoints =14;
-        client.on('message', function(topic, message) {
-            console.log('Received message:', message.toString());
-            if (topic == 'TA-hapdevs') {
-                var allHapdev = message.toString().split(',');
+        client.on("message", function (topic, message) {
+            console.log("Received message:", message.toString());
+            if (topic == "TA-hapdevs") {
+                var allHapdev = message.toString().split(",");
                 var haptic4 = parseFloat(allHapdev[3]);
                 myChart4.data.datasets[0].data.push({
-                    x: new Date().getTime(),
-                    y: haptic4
+                    x: Date.now(),
+                    y: haptic4,
                 });
-    
-                if (myChart4.data.datasets[1].data.length < myChart4.data.datasets[0].data.length) {
-                    let latestX = myChart4.data.datasets[0].data[myChart4.data.datasets[0].data.length - 1].x;
-                    myChart4.data.datasets[1].data.push({
-                        x: latestX,
-                        y: null
-                    });
-                }
-            } else if (topic === 'TA-morobs') {
-                var allData = message.toString().split(',');
+            } else if (topic === "TA-morobs") {
+                var allData = message.toString().split(",");
                 var motor4 = parseFloat(allData[3]);
-    
                 myChart4.data.datasets[1].data.push({
-                    x: new Date().getTime(),
-                    y: motor4
+                    x: Date.now(),
+                    y: motor4,
                 });
-    
-                if (myChart4.data.datasets[0].data.length < myChart4.data.datasets[1].data.length) {
-                    let latestX = myChart4.data.datasets[1].data[myChart4.data.datasets[1].data.length - 1].x;
-                    myChart4.data.datasets[0].data.push({
-                        x: latestX,
-                        y: null
-                    });
-                }
             }
-    
-            // Limit data to maximum number of points
-            if (myChart4.data.datasets[0].data.length > maxDataPoints) {
-                myChart4.data.datasets[0].data.shift(); // Remove oldest data point for Haptic 1
-            }
-    
-            if (myChart4.data.datasets[1].data.length > maxDataPoints) {
-                myChart4.data.datasets[1].data.shift(); // Remove oldest data point for Motor 1
-            }
-    
-            myChart4.data.labels = myChart4.data.datasets[0].data.map(point => new Date(point.x).toLocaleTimeString());
-    
-            myChart4.update();
-                
-        });
-    
-        let ctx = $("#line-chart-widget-4")[0].getContext("2d");
-        let myChart4 = new Chart(ctx, {
-            type: "line",
-            data: {
-                labels: [], // empty array to be populated with timestamp values
-                datasets: [
-                    {
-                        label: "Haptic 4",
-                        data: [], // empty array to be populated with MQTT data for Motor 1
-                        borderWidth: 2,
-                        borderColor: colors.primary(),
-                        backgroundColor: "transparent",
-                        pointBorderColor: "transparent",
-                        tension: 0.4,
-                    },
-                    {
-                        label: "Motor 4",
-                        data: [], // empty array to be populated with MQTT data for Haptic 1
-                        borderWidth: 2,
-                        borderColor: "red",
-                        backgroundColor: "transparent",
-                        pointBorderColor: "transparent",
-                        tension: 0.4,
-                    },
-                ],
-            },
-            options: {
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: colors.slate["500"](0.8),
-                        },
-                    },
+              
+            myChart4.update({
+                preservation: true, // Preserve the existing chart data
+            });
+              });
+    let ctx = $("#line-chart-widget-4")[0].getContext("2d");
+    let myChart4 = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: [], // empty array to be populated with timestamp values
+            datasets: [
+                {
+                    label: "Haptic 4",
+                    data: [], // empty array to be populated with MQTT data for Motor 1
+                    borderWidth: 2,
+                    borderColor: colors.primary(),
+                    backgroundColor: "transparent",
+                    pointBorderColor: "transparent",
+                    tension: 0.4,
                 },
-                scales: {
-                    x: {
-                        ticks: {
-                            font: {
-                                size: "12",
-                            },
-                            font: colors.slate["500"](0.8),
-                            callback: function (value, index, values) {
-                                // convert timestamp to hour and minute
-                                const date = new Date(value);
-                                const hours = date.getHours().toString().padStart(2, "0");
-                                const minutes = date.getMinutes().toString().padStart(2, "0");
-                                return hours + ":" + minutes;
-                            },
-                        },
-                        grid: {
-                            display: false,
-                            drawBorder: false,
-                        },
-                    },
-                    y: {
-                        ticks: {
-                            font: {
-                                size: "12",
-                            },
-                            color: colors.slate["500"](0.8),
-                            callback: function (value, index, values) {
-                                return value + "°"; // add degree symbol to y-axis ticks
-                            },
-                        },
-                        grid: {
-                            color: $("html").hasClass("dark")
-                                ? colors.slate["500"](0.3)
-                                : colors.slate["300"](),
-                            borderDash: [2, 2],
-                            drawBorder: false,
-                        },
+                {
+                    label: "Motor 4",
+                    data: [], // empty array to be populated with MQTT data for Haptic 1
+                    borderWidth: 2,
+                    borderColor: "red",
+                    backgroundColor: "transparent",
+                    pointBorderColor: "transparent",
+                    tension: 0.4,
+                },
+            ],
+        },
+        options: {
+            maintainAspectRatio: false,
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: colors.slate["500"](0.8),
                     },
                 },
             },
-            
-        });
-        
+            scales: {
+                x: {
+                    type: "realtime",
+                    realtime: {
+                        duration: 20000,
+                        refresh: 1000,
+                        delay: 2000,
+                        pause: false,
+                        ttl: undefined,
+                        frameRate: 30,
+                        onRefresh: function (chart) {
+                            chart.data.datasets.forEach(function (dataset) {
+                            dataset.data = dataset.data.filter(function (data) {
+                            return data.x >= Date.now() - 20000; // Filter data based on the last 20 seconds
+                            });
+                        });
+                        },
+                    },
+                    ticks: {
+                        font: {
+                            size: "12",
+                        },
+                        font: colors.slate["500"](0.8),
+                    },
+                    grid: {
+                        display: false,
+                        drawBorder: false,
+                    },
+                },
+                y: {
+                    ticks: {
+                        font: {
+                            size: "12",
+                        },
+                        color: colors.slate["500"](0.8),
+                        callback: function (value, index, values) {
+                            return value + "°"; // add degree symbol to y-axis ticks
+                        },
+                    },
+                    grid: {
+                        color: $("html").hasClass("dark")
+                            ? colors.slate["500"](0.3)
+                            : colors.slate["300"](),
+                        borderDash: [2, 2],
+                        drawBorder: false,
+                    },
+                },
+            },
+        },
+                    
+    });           
     }
-
+    
     if ($("#line-chart-widget-5").length) {
-        let maxDataPoints =14;
-        client.on('message', function(topic, message) {
-            console.log('Received message:', message.toString());
-            if (topic == 'TA-hapdevs') {
-                var allHapdev = message.toString().split(',');
+        client.on("message", function (topic, message) {
+            console.log("Received message:", message.toString());
+            if (topic == "TA-hapdevs") {
+                var allHapdev = message.toString().split(",");
                 var haptic5 = parseFloat(allHapdev[4]);
                 myChart5.data.datasets[0].data.push({
-                    x: new Date().getTime(),
-                    y: haptic5
+                    x: Date.now(),
+                    y: haptic5,
                 });
-    
-                if (myChart5.data.datasets[1].data.length < myChart5.data.datasets[0].data.length) {
-                    let latestX = myChart5.data.datasets[0].data[myChart5.data.datasets[0].data.length - 1].x;
-                    myChart5.data.datasets[1].data.push({
-                        x: latestX,
-                        y: null
-                    });
-                }
-            } else if (topic === 'TA-morobs') {
-                var allData = message.toString().split(',');
+            } else if (topic === "TA-morobs") {
+                var allData = message.toString().split(",");
                 var motor5 = parseFloat(allData[4]);
-    
                 myChart5.data.datasets[1].data.push({
-                    x: new Date().getTime(),
-                    y: motor5
+                    x: Date.now(),
+                    y: motor5,
                 });
-    
-                if (myChart5.data.datasets[0].data.length < myChart5.data.datasets[1].data.length) {
-                    let latestX = myChart5.data.datasets[1].data[myChart5.data.datasets[1].data.length - 1].x;
-                    myChart5.data.datasets[0].data.push({
-                        x: latestX,
-                        y: null
-                    });
-                }
             }
-    
-            // Limit data to maximum number of points
-            if (myChart5.data.datasets[0].data.length > maxDataPoints) {
-                myChart5.data.datasets[0].data.shift(); // Remove oldest data point for Haptic 1
-            }
-    
-            if (myChart5.data.datasets[1].data.length > maxDataPoints) {
-                myChart5.data.datasets[1].data.shift(); // Remove oldest data point for Motor 1
-            }
-    
-            myChart5.data.labels = myChart5.data.datasets[0].data.map(point => new Date(point.x).toLocaleTimeString());
-    
-            myChart5.update();
-                
-        });
-    
-        let ctx = $("#line-chart-widget-5")[0].getContext("2d");
-        let myChart5 = new Chart(ctx, {
-            type: "line",
-            data: {
-                labels: [], // empty array to be populated with timestamp values
-                datasets: [
-                    {
-                        label: "Haptic 5",
-                        data: [], // empty array to be populated with MQTT data for Motor 1
-                        borderWidth: 2,
-                        borderColor: colors.primary(),
-                        backgroundColor: "transparent",
-                        pointBorderColor: "transparent",
-                        tension: 0.4,
-                    },
-                    {
-                        label: "Motor 5",
-                        data: [], // empty array to be populated with MQTT data for Haptic 1
-                        borderWidth: 2,
-                        borderColor: "red",
-                        backgroundColor: "transparent",
-                        pointBorderColor: "transparent",
-                        tension: 0.4,
-                    },
-                ],
-            },
-            options: {
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: colors.slate["500"](0.8),
-                        },
-                    },
+              
+            myChart5.update({
+                preservation: true, // Preserve the existing chart data
+            });
+              });
+    let ctx = $("#line-chart-widget-5")[0].getContext("2d");
+    let myChart5 = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: [], // empty array to be populated with timestamp values
+            datasets: [
+                {
+                    label: "Haptic 5",
+                    data: [], // empty array to be populated with MQTT data for Motor 1
+                    borderWidth: 2,
+                    borderColor: colors.primary(),
+                    backgroundColor: "transparent",
+                    pointBorderColor: "transparent",
+                    tension: 0.4,
                 },
-                scales: {
-                    x: {
-                        ticks: {
-                            font: {
-                                size: "12",
-                            },
-                            font: colors.slate["500"](0.8),
-                            callback: function (value, index, values) {
-                                // convert timestamp to hour and minute
-                                const date = new Date(value);
-                                const hours = date.getHours().toString().padStart(2, "0");
-                                const minutes = date.getMinutes().toString().padStart(2, "0");
-                                return hours + ":" + minutes;
-                            },
-                        },
-                        grid: {
-                            display: false,
-                            drawBorder: false,
-                        },
-                    },
-                    y: {
-                        ticks: {
-                            font: {
-                                size: "12",
-                            },
-                            color: colors.slate["500"](0.8),
-                            callback: function (value, index, values) {
-                                return value + "°"; // add degree symbol to y-axis ticks
-                            },
-                        },
-                        grid: {
-                            color: $("html").hasClass("dark")
-                                ? colors.slate["500"](0.3)
-                                : colors.slate["300"](),
-                            borderDash: [2, 2],
-                            drawBorder: false,
-                        },
+                {
+                    label: "Motor 5",
+                    data: [], // empty array to be populated with MQTT data for Haptic 1
+                    borderWidth: 2,
+                    borderColor: "red",
+                    backgroundColor: "transparent",
+                    pointBorderColor: "transparent",
+                    tension: 0.4,
+                },
+            ],
+        },
+        options: {
+            maintainAspectRatio: false,
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: colors.slate["500"](0.8),
                     },
                 },
             },
-            
-        });
-        
+            scales: {
+                x: {
+                    type: "realtime",
+                    realtime: {
+                        duration: 20000,
+                        refresh: 1000,
+                        delay: 2000,
+                        pause: false,
+                        ttl: undefined,
+                        frameRate: 30,
+                        onRefresh: function (chart) {
+                            chart.data.datasets.forEach(function (dataset) {
+                            dataset.data = dataset.data.filter(function (data) {
+                            return data.x >= Date.now() - 20000; // Filter data based on the last 20 seconds
+                            });
+                        });
+                        },
+                    },
+                    ticks: {
+                        font: {
+                            size: "12",
+                        },
+                        font: colors.slate["500"](0.8),
+                    },
+                    grid: {
+                        display: false,
+                        drawBorder: false,
+                    },
+                },
+                y: {
+                    ticks: {
+                        font: {
+                            size: "12",
+                        },
+                        color: colors.slate["500"](0.8),
+                        callback: function (value, index, values) {
+                            return value + "°"; // add degree symbol to y-axis ticks
+                        },
+                    },
+                    grid: {
+                        color: $("html").hasClass("dark")
+                            ? colors.slate["500"](0.3)
+                            : colors.slate["300"](),
+                        borderDash: [2, 2],
+                        drawBorder: false,
+                    },
+                },
+            },
+        },
+                    
+    });           
     }
     if ($("#line-chart-widget-6").length) {
-        let maxDataPoints =14;
-        client.on('message', function(topic, message) {
-            console.log('Received message:', message.toString());
-            if (topic == 'TA-hapdevs') {
-                var allHapdev = message.toString().split(',');
-                var haptic6 = parseFloat(allHapdev[5]);
-                myChart6.data.datasets[0].data.push({
-                    x: new Date().getTime(),
-                    y: haptic6
-                });
-    
-                if (myChart6.data.datasets[1].data.length < myChart6.data.datasets[0].data.length) {
-                    let latestX = myChart6.data.datasets[0].data[myChart6.data.datasets[0].data.length - 1].x;
-                    myChart6.data.datasets[1].data.push({
-                        x: latestX,
-                        y: null
-                    });
-                }
-            } else if (topic === 'TA-morobs') {
-                var allData = message.toString().split(',');
-                var motor6 = parseFloat(allData[5]);
-    
-                myChart6.data.datasets[1].data.push({
-                    x: new Date().getTime(),
-                    y: motor6
-                });
-    
-                if (myChart6.data.datasets[0].data.length < myChart6.data.datasets[1].data.length) {
-                    let latestX = myChart6.data.datasets[1].data[myChart6.data.datasets[1].data.length - 1].x;
-                    myChart6.data.datasets[0].data.push({
-                        x: latestX,
-                        y: null
-                    });
-                }
+        client.on("message", function (topic, message) {
+            console.log("Received message:", message.toString());
+            if (topic == "TA-hapdevs") {
+              var allHapdev = message.toString().split(",");
+              var haptic6 = parseFloat(allHapdev[5]);
+              myChart6.data.datasets[0].data.push({
+                x: Date.now(),
+                y: haptic6,
+              });
+            } else if (topic === "TA-morobs") {
+              var allData = message.toString().split(",");
+              var motor6 = parseFloat(allData[5]);
+              myChart6.data.datasets[1].data.push({
+                x: Date.now(),
+                y: motor6,
+              });
             }
-    
-            // Limit data to maximum number of points
-            if (myChart6.data.datasets[0].data.length > maxDataPoints) {
-                myChart6.data.datasets[0].data.shift(); // Remove oldest data point for Haptic 1
-            }
-    
-            if (myChart6.data.datasets[1].data.length > maxDataPoints) {
-                myChart6.data.datasets[1].data.shift(); // Remove oldest data point for Motor 1
-            }
-    
-            myChart6.data.labels = myChart6.data.datasets[0].data.map(point => new Date(point.x).toLocaleTimeString());
-    
-            myChart6.update();
-                
-        });
-    
-        let ctx = $("#line-chart-widget-6")[0].getContext("2d");
-        let myChart6 = new Chart(ctx, {
-            type: "line",
-            data: {
-                labels: [], // empty array to be populated with timestamp values
-                datasets: [
-                    {
-                        label: "Haptic 1",
-                        data: [], // empty array to be populated with MQTT data for Motor 1
-                        borderWidth: 2,
-                        borderColor: colors.primary(),
-                        backgroundColor: "transparent",
-                        pointBorderColor: "transparent",
-                        tension: 0.4,
-                    },
-                    {
-                        label: "Motor 1",
-                        data: [], // empty array to be populated with MQTT data for Haptic 1
-                        borderWidth: 2,
-                        borderColor: "red",
-                        backgroundColor: "transparent",
-                        pointBorderColor: "transparent",
-                        tension: 0.4,
-                    },
-                ],
-            },
-            options: {
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: colors.slate["500"](0.8),
-                        },
-                    },
-                },
-                scales: {
-                    x: {
-                        ticks: {
-                            font: {
-                                size: "12",
-                            },
-                            font: colors.slate["500"](0.8),
-                            callback: function (value, index, values) {
-                                // convert timestamp to hour and minute
-                                const date = new Date(value);
-                                const hours = date.getHours().toString().padStart(2, "0");
-                                const minutes = date.getMinutes().toString().padStart(2, "0");
-                                return hours + ":" + minutes;
-                            },
-                        },
-                        grid: {
-                            display: false,
-                            drawBorder: false,
-                        },
-                    },
-                    y: {
-                        ticks: {
-                            font: {
-                                size: "12",
-                            },
-                            color: colors.slate["500"](0.8),
-                            callback: function (value, index, values) {
-                                return value + "°"; // add degree symbol to y-axis ticks
-                            },
-                        },
-                        grid: {
-                            color: $("html").hasClass("dark")
-                                ? colors.slate["500"](0.3)
-                                : colors.slate["300"](),
-                            borderDash: [2, 2],
-                            drawBorder: false,
-                        },
-                    },
-                },
-            },
-            
-        });
-        
-    }
-
-    if ($("#line-chart-widget-7").length) {
-        let maxDataPoints =14;
-        client.on('message', function(topic, message) {
-            console.log('Received message:', message.toString());
-            if (topic == 'TA-hapdevs') {
-                var allHapdev = message.toString().split(',');
-                var haptic7 = parseFloat(allHapdev[6]);
-                myChart7.data.datasets[0].data.push({
-                    x: new Date().getTime(),
-                    y: haptic7
-                });
-    
-                if (myChart7.data.datasets[1].data.length < myChart7.data.datasets[0].data.length) {
-                    let latestX = myChart7.data.datasets[0].data[myChart7.data.datasets[0].data.length - 1].x;
-                    myChart7.data.datasets[1].data.push({
-                        x: latestX,
-                        y: null
-                    });
-                }
-            } else if (topic === 'TA-morobs') {
-                var allData = message.toString().split(',');
-                var motor7 = parseFloat(allData[6]);
-    
-                myChart7.data.datasets[1].data.push({
-                    x: new Date().getTime(),
-                    y: motor7
-                });
-    
-                if (myChart7.data.datasets[0].data.length < myChart7.data.datasets[1].data.length) {
-                    let latestX = myChart7.data.datasets[1].data[myChart7.data.datasets[1].data.length - 1].x;
-                    myChart7.data.datasets[0].data.push({
-                        x: latestX,
-                        y: null
-                    });
-                }
-            }
-    
-            // Limit data to maximum number of points
-            if (myChart7.data.datasets[0].data.length > maxDataPoints) {
-                myChart7.data.datasets[0].data.shift(); // Remove oldest data point for Haptic 1
-            }
-    
-            if (myChart7.data.datasets[1].data.length > maxDataPoints) {
-                myChart7.data.datasets[1].data.shift(); // Remove oldest data point for Motor 1
-            }
-    
-            myChart7.data.labels = myChart7.data.datasets[0].data.map(point => new Date(point.x).toLocaleTimeString());
-    
-            myChart7.update();
-                
-        });
-    
-        let ctx = $("#line-chart-widget-7")[0].getContext("2d");
-        let myChart7 = new Chart(ctx, {
-            type: "line",
-            data: {
-                labels: [], // empty array to be populated with timestamp values
-                datasets: [
-                    {
-                        label: "Haptic 7",
-                        data: [], // empty array to be populated with MQTT data for Motor 1
-                        borderWidth: 2,
-                        borderColor: colors.primary(),
-                        backgroundColor: "transparent",
-                        pointBorderColor: "transparent",
-                        tension: 0.4,
-                    },
-                    {
-                        label: "Motor 7",
-                        data: [], // empty array to be populated with MQTT data for Haptic 1
-                        borderWidth: 2,
-                        borderColor: "red",
-                        backgroundColor: "transparent",
-                        pointBorderColor: "transparent",
-                        tension: 0.4,
-                    },
-                ],
-            },
-            options: {
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: colors.slate["500"](0.8),
-                        },
-                    },
-                },
-                scales: {
-                    x: {
-                        ticks: {
-                            font: {
-                                size: "12",
-                            },
-                            font: colors.slate["500"](0.8),
-                            callback: function (value, index, values) {
-                                // convert timestamp to hour and minute
-                                const date = new Date(value);
-                                const hours = date.getHours().toString().padStart(2, "0");
-                                const minutes = date.getMinutes().toString().padStart(2, "0");
-                                return hours + ":" + minutes;
-                            },
-                        },
-                        grid: {
-                            display: false,
-                            drawBorder: false,
-                        },
-                    },
-                    y: {
-                        ticks: {
-                            font: {
-                                size: "12",
-                            },
-                            color: colors.slate["500"](0.8),
-                            callback: function (value, index, values) {
-                                return value + "°"; // add degree symbol to y-axis ticks
-                            },
-                        },
-                        grid: {
-                            color: $("html").hasClass("dark")
-                                ? colors.slate["500"](0.3)
-                                : colors.slate["300"](),
-                            borderDash: [2, 2],
-                            drawBorder: false,
-                        },
-                    },
-                },
-            },
-            
-        });
-        
-    }
-
-if ($("#line-chart-widget-8").length) {
-    let maxDataPoints =14;
-    client.on('message', function(topic, message) {
-        console.log('Received message:', message.toString());
-        if (topic == 'TA-hapdevs') {
-            var allHapdev = message.toString().split(',');
-            var haptic8 = parseFloat(allHapdev[7]);
-            myChart8.data.datasets[0].data.push({
-                x: new Date().getTime(),
-                y: haptic8
+          
+            myChart6.update({
+              preservation: true, // Preserve the existing chart data
             });
-
-            if (myChart8.data.datasets[1].data.length < myChart8.data.datasets[0].data.length) {
-                let latestX = myChart8.data.datasets[0].data[myChart8.data.datasets[0].data.length - 1].x;
-                myChart8.data.datasets[1].data.push({
-                    x: latestX,
-                    y: null
-                });
-            }
-        } else if (topic === 'TA-morobs') {
-            var allData = message.toString().split(',');
-            var motor8 = parseFloat(allData[7]);
-
-            myChart8.data.datasets[1].data.push({
-                x: new Date().getTime(),
-                y: motor8
+          });
+        
+            let ctx = $("#line-chart-widget-6")[0].getContext("2d");
+            let myChart6 = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: [], // empty array to be populated with timestamp values
+                    datasets: [
+                        {
+                            label: "Haptic 6",
+                            data: [], // empty array to be populated with MQTT data for Motor 1
+                            borderWidth: 2,
+                            borderColor: colors.primary(),
+                            backgroundColor: "transparent",
+                            pointBorderColor: "transparent",
+                            tension: 0.4,
+                        },
+                        {
+                            label: "Motor 6",
+                            data: [], // empty array to be populated with MQTT data for Haptic 1
+                            borderWidth: 2,
+                            borderColor: "red",
+                            backgroundColor: "transparent",
+                            pointBorderColor: "transparent",
+                            tension: 0.4,
+                        },
+                    ],
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: colors.slate["500"](0.8),
+                            },
+                        },
+                    },
+                    scales: {
+                        x: {
+                            type: "realtime",
+                            realtime: {
+                              duration: 20000,
+                              refresh: 1000,
+                              delay: 2000,
+                              pause: false,
+                              ttl: undefined,
+                              frameRate: 30,
+                              onRefresh: function (chart) {
+                                chart.data.datasets.forEach(function (dataset) {
+                                  dataset.data = dataset.data.filter(function (data) {
+                                    return data.x >= Date.now() - 20000; // Filter data based on the last 20 seconds
+                                  });
+                                });
+                              },
+                            },
+                            ticks: {
+                                font: {
+                                    size: "12",
+                                },
+                                font: colors.slate["500"](0.8),
+                            },
+                            grid: {
+                                display: false,
+                                drawBorder: false,
+                            },
+                        },
+                        y: {
+                            ticks: {
+                                font: {
+                                    size: "12",
+                                },
+                                color: colors.slate["500"](0.8),
+                                callback: function (value, index, values) {
+                                    return value + "°"; // add degree symbol to y-axis ticks
+                                },
+                            },
+                            grid: {
+                                color: $("html").hasClass("dark")
+                                    ? colors.slate["500"](0.3)
+                                    : colors.slate["300"](),
+                                borderDash: [2, 2],
+                                drawBorder: false,
+                            },
+                        },
+                    },
+                },
+                
             });
-
-            if (myChart8.data.datasets[0].data.length < myChart8.data.datasets[1].data.length) {
-                let latestX = myChart8.data.datasets[1].data[myChart8.data.datasets[1].data.length - 1].x;
-                myChart8.data.datasets[0].data.push({
-                    x: latestX,
-                    y: null
-                });
-            }
-        }
-
-        // Limit data to maximum number of points
-        if (myChart8.data.datasets[0].data.length > maxDataPoints) {
-            myChart8.data.datasets[0].data.shift(); // Remove oldest data point for Haptic 1
-        }
-
-        if (myChart8.data.datasets[1].data.length > maxDataPoints) {
-            myChart8.data.datasets[1].data.shift(); // Remove oldest data point for Motor 1
-        }
-
-        myChart8.data.labels = myChart8.data.datasets[0].data.map(point => new Date(point.x).toLocaleTimeString());
-
-        myChart8.update();
             
-    });
+        }
     
+        if ($("#line-chart-widget-7").length) {
+            client.on("message", function (topic, message) {
+                console.log("Received message:", message.toString());
+                if (topic == "TA-hapdevs") {
+                  var allHapdev = message.toString().split(",");
+                  var haptic7 = parseFloat(allHapdev[6]);
+                  myChart7.data.datasets[0].data.push({
+                    x: Date.now(),
+                    y: haptic7,
+                  });
+                } else if (topic === "TA-morobs") {
+                  var allData = message.toString().split(",");
+                  var motor7 = parseFloat(allData[6]);
+                  myChart7.data.datasets[1].data.push({
+                    x: Date.now(),
+                    y: motor7,
+                  });
+                }
+              
+                myChart7.update({
+                  preservation: true, // Preserve the existing chart data
+                });
+              });
+            
+                let ctx = $("#line-chart-widget-7")[0].getContext("2d");
+                let myChart7 = new Chart(ctx, {
+                    type: "line",
+                    data: {
+                        labels: [], // empty array to be populated with timestamp values
+                        datasets: [
+                            {
+                                label: "Haptic 7",
+                                data: [], // empty array to be populated with MQTT data for Motor 1
+                                borderWidth: 2,
+                                borderColor: colors.primary(),
+                                backgroundColor: "transparent",
+                                pointBorderColor: "transparent",
+                                tension: 0.4,
+                            },
+                            {
+                                label: "Motor 7",
+                                data: [], // empty array to be populated with MQTT data for Haptic 1
+                                borderWidth: 2,
+                                borderColor: "red",
+                                backgroundColor: "transparent",
+                                pointBorderColor: "transparent",
+                                tension: 0.4,
+                            },
+                        ],
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: colors.slate["500"](0.8),
+                                },
+                            },
+                        },
+                        scales: {
+                            x: {
+                                type: "realtime",
+                                realtime: {
+                                  duration: 20000,
+                                  refresh: 1000,
+                                  delay: 2000,
+                                  pause: false,
+                                  ttl: undefined,
+                                  frameRate: 30,
+                                  onRefresh: function (chart) {
+                                    chart.data.datasets.forEach(function (dataset) {
+                                      dataset.data = dataset.data.filter(function (data) {
+                                        return data.x >= Date.now() - 20000; // Filter data based on the last 20 seconds
+                                      });
+                                    });
+                                  },
+                                },
+                                ticks: {
+                                    font: {
+                                        size: "12",
+                                    },
+                                    font: colors.slate["500"](0.8),
+                                },
+                                grid: {
+                                    display: false,
+                                    drawBorder: false,
+                                },
+                            },
+                            y: {
+                                ticks: {
+                                    font: {
+                                        size: "12",
+                                    },
+                                    color: colors.slate["500"](0.8),
+                                    callback: function (value, index, values) {
+                                        return value + "°"; // add degree symbol to y-axis ticks
+                                    },
+                                },
+                                grid: {
+                                    color: $("html").hasClass("dark")
+                                        ? colors.slate["500"](0.3)
+                                        : colors.slate["300"](),
+                                    borderDash: [2, 2],
+                                    drawBorder: false,
+                                },
+                            },
+                        },
+                    },
+                    
+                });
+                
+            }
+        if ($("#line-chart-widget-8").length) {
+            client.on("message", function (topic, message) {
+                console.log("Received message:", message.toString());
+                if (topic == "TA-hapdevs") {
+                    var allHapdev = message.toString().split(",");
+                    var haptic8 = parseFloat(allHapdev[7]);
+                    myChart8.data.datasets[0].data.push({
+                        x: Date.now(),
+                        y: haptic8,
+                    });
+                } else if (topic === "TA-morobs") {
+                    var allData = message.toString().split(",");
+                    var motor8 = parseFloat(allData[7]);
+                    myChart8.data.datasets[1].data.push({
+                        x: Date.now(),
+                        y: motor8,
+                    });
+                }
+                  
+                myChart8.update({
+                    preservation: true, // Preserve the existing chart data
+                });
+                  });
         let ctx = $("#line-chart-widget-8")[0].getContext("2d");
         let myChart8 = new Chart(ctx, {
             type: "line",
@@ -2281,6 +2128,7 @@ if ($("#line-chart-widget-8").length) {
             },
             options: {
                 maintainAspectRatio: false,
+                responsive: true,
                 plugins: {
                     legend: {
                         labels: {
@@ -2290,18 +2138,27 @@ if ($("#line-chart-widget-8").length) {
                 },
                 scales: {
                     x: {
+                        type: "realtime",
+                        realtime: {
+                            duration: 20000,
+                            refresh: 1000,
+                            delay: 2000,
+                            pause: false,
+                            ttl: undefined,
+                            frameRate: 30,
+                            onRefresh: function (chart) {
+                                chart.data.datasets.forEach(function (dataset) {
+                                dataset.data = dataset.data.filter(function (data) {
+                                return data.x >= Date.now() - 20000; // Filter data based on the last 20 seconds
+                                });
+                            });
+                            },
+                        },
                         ticks: {
                             font: {
                                 size: "12",
                             },
                             font: colors.slate["500"](0.8),
-                            callback: function (value, index, values) {
-                                // convert timestamp to hour and minute
-                                const date = new Date(value);
-                                const hours = date.getHours().toString().padStart(2, "0");
-                                const minutes = date.getMinutes().toString().padStart(2, "0");
-                                return hours + ":" + minutes;
-                            },
                         },
                         grid: {
                             display: false,
@@ -2328,356 +2185,327 @@ if ($("#line-chart-widget-8").length) {
                     },
                 },
             },
-            
-        });
-        
+                        
+        });           
     }
-
+    
     if ($("#line-chart-widget-9").length) {
-        let maxDataPoints =14;
-        client.on('message', function(topic, message) {
-            console.log('Received message:', message.toString());
-            if (topic == 'TA-hapdevs') {
-                var allHapdev = message.toString().split(',');
+        client.on("message", function (topic, message) {
+            console.log("Received message:", message.toString());
+            if (topic == "TA-hapdevs") {
+                var allHapdev = message.toString().split(",");
                 var haptic9 = parseFloat(allHapdev[8]);
                 myChart9.data.datasets[0].data.push({
-                    x: new Date().getTime(),
-                    y: haptic9
+                    x: Date.now(),
+                    y: haptic9,
                 });
-    
-                if (myChart9.data.datasets[1].data.length < myChart9.data.datasets[0].data.length) {
-                    let latestX = myChart9.data.datasets[0].data[myChart9.data.datasets[0].data.length - 1].x;
-                    myChart9.data.datasets[1].data.push({
-                        x: latestX,
-                        y: null
-                    });
-                }
-            } else if (topic === 'TA-morobs') {
-                var allData = message.toString().split(',');
+            } else if (topic === "TA-morobs") {
+                var allData = message.toString().split(",");
                 var motor9 = parseFloat(allData[8]);
-    
                 myChart9.data.datasets[1].data.push({
-                    x: new Date().getTime(),
-                    y: motor9
+                    x: Date.now(),
+                    y: motor9,
                 });
-    
-                if (myChart9.data.datasets[0].data.length < myChart9.data.datasets[1].data.length) {
-                    let latestX = myChart9.data.datasets[1].data[myChart9.data.datasets[1].data.length - 1].x;
-                    myChart9.data.datasets[0].data.push({
-                        x: latestX,
-                        y: null
-                    });
-                }
             }
-    
-            // Limit data to maximum number of points
-            if (myChart9.data.datasets[0].data.length > maxDataPoints) {
-                myChart9.data.datasets[0].data.shift(); // Remove oldest data point for Haptic 1
-            }
-    
-            if (myChart9.data.datasets[1].data.length > maxDataPoints) {
-                myChart9.data.datasets[1].data.shift(); // Remove oldest data point for Motor 1
-            }
-    
-            myChart9.data.labels = myChart9.data.datasets[0].data.map(point => new Date(point.x).toLocaleTimeString());
-    
-            myChart9.update();
-                
-        });
-    
-        let ctx = $("#line-chart-widget-9")[0].getContext("2d");
-        let myChart9 = new Chart(ctx, {
-            type: "line",
-            data: {
-                labels: [], // empty array to be populated with timestamp values
-                datasets: [
-                    {
-                        label: "Haptic 9",
-                        data: [], // empty array to be populated with MQTT data for Motor 1
-                        borderWidth: 2,
-                        borderColor: colors.primary(),
-                        backgroundColor: "transparent",
-                        pointBorderColor: "transparent",
-                        tension: 0.4,
-                    },
-                    {
-                        label: "Motor 9",
-                        data: [], // empty array to be populated with MQTT data for Haptic 1
-                        borderWidth: 2,
-                        borderColor: "red",
-                        backgroundColor: "transparent",
-                        pointBorderColor: "transparent",
-                        tension: 0.4,
-                    },
-                ],
-            },
-            options: {
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: colors.slate["500"](0.8),
-                        },
-                    },
+              
+            myChart9.update({
+                preservation: true, // Preserve the existing chart data
+            });
+              });
+    let ctx = $("#line-chart-widget-9")[0].getContext("2d");
+    let myChart9 = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: [], // empty array to be populated with timestamp values
+            datasets: [
+                {
+                    label: "Haptic 9",
+                    data: [], // empty array to be populated with MQTT data for Motor 1
+                    borderWidth: 2,
+                    borderColor: colors.primary(),
+                    backgroundColor: "transparent",
+                    pointBorderColor: "transparent",
+                    tension: 0.4,
                 },
-                scales: {
-                    x: {
-                        ticks: {
-                            font: {
-                                size: "12",
-                            },
-                            font: colors.slate["500"](0.8),
-                            callback: function (value, index, values) {
-                                // convert timestamp to hour and minute
-                                const date = new Date(value);
-                                const hours = date.getHours().toString().padStart(2, "0");
-                                const minutes = date.getMinutes().toString().padStart(2, "0");
-                                return hours + ":" + minutes;
-                            },
-                        },
-                        grid: {
-                            display: false,
-                            drawBorder: false,
-                        },
-                    },
-                    y: {
-                        ticks: {
-                            font: {
-                                size: "12",
-                            },
-                            color: colors.slate["500"](0.8),
-                            callback: function (value, index, values) {
-                                return value + "°"; // add degree symbol to y-axis ticks
-                            },
-                        },
-                        grid: {
-                            color: $("html").hasClass("dark")
-                                ? colors.slate["500"](0.3)
-                                : colors.slate["300"](),
-                            borderDash: [2, 2],
-                            drawBorder: false,
-                        },
+                {
+                    label: "Motor 9",
+                    data: [], // empty array to be populated with MQTT data for Haptic 1
+                    borderWidth: 2,
+                    borderColor: "red",
+                    backgroundColor: "transparent",
+                    pointBorderColor: "transparent",
+                    tension: 0.4,
+                },
+            ],
+        },
+        options: {
+            maintainAspectRatio: false,
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: colors.slate["500"](0.8),
                     },
                 },
             },
-            
-        });
-        
+            scales: {
+                x: {
+                    type: "realtime",
+                    realtime: {
+                        duration: 20000,
+                        refresh: 1000,
+                        delay: 2000,
+                        pause: false,
+                        ttl: undefined,
+                        frameRate: 30,
+                        onRefresh: function (chart) {
+                            chart.data.datasets.forEach(function (dataset) {
+                            dataset.data = dataset.data.filter(function (data) {
+                            return data.x >= Date.now() - 20000; // Filter data based on the last 20 seconds
+                            });
+                        });
+                        },
+                    },
+                    ticks: {
+                        font: {
+                            size: "12",
+                        },
+                        font: colors.slate["500"](0.8),
+                    },
+                    grid: {
+                        display: false,
+                        drawBorder: false,
+                    },
+                },
+                y: {
+                    ticks: {
+                        font: {
+                            size: "12",
+                        },
+                        color: colors.slate["500"](0.8),
+                        callback: function (value, index, values) {
+                            return value + "°"; // add degree symbol to y-axis ticks
+                        },
+                    },
+                    grid: {
+                        color: $("html").hasClass("dark")
+                            ? colors.slate["500"](0.3)
+                            : colors.slate["300"](),
+                        borderDash: [2, 2],
+                        drawBorder: false,
+                    },
+                },
+            },
+        },
+                    
+    });           
     }
-
+    
     if ($("#line-chart-widget-10").length) {
-        let maxDataPoints =14;
-        client.on('message', function(topic, message) {
-            console.log('Received message:', message.toString());
-            if (topic == 'TA-hapdevs') {
-                var allHapdev = message.toString().split(',');
+        client.on("message", function (topic, message) {
+            console.log("Received message:", message.toString());
+            if (topic == "TA-hapdevs") {
+                var allHapdev = message.toString().split(",");
                 var haptic10 = parseFloat(allHapdev[9]);
                 myChart10.data.datasets[0].data.push({
-                    x: new Date().getTime(),
-                    y: haptic10
+                    x: Date.now(),
+                    y: haptic10,
                 });
-    
-                if (myChart10.data.datasets[1].data.length < myChart10.data.datasets[0].data.length) {
-                    let latestX = myChart10.data.datasets[0].data[myChart10.data.datasets[0].data.length - 1].x;
-                    myChart10.data.datasets[1].data.push({
-                        x: latestX,
-                        y: null
-                    });
-                }
-            } else if (topic === 'TA-morobs') {
-                var allData = message.toString().split(',');
+            } else if (topic === "TA-morobs") {
+                var allData = message.toString().split(",");
                 var motor10 = parseFloat(allData[9]);
-    
                 myChart10.data.datasets[1].data.push({
-                    x: new Date().getTime(),
-                    y: motor10
+                    x: Date.now(),
+                    y: motor10,
                 });
-    
-                if (myChart10.data.datasets[0].data.length < myChart10.data.datasets[1].data.length) {
-                    let latestX = myChart10.data.datasets[1].data[myChart10.data.datasets[1].data.length - 1].x;
-                    myChart10.data.datasets[0].data.push({
-                        x: latestX,
-                        y: null
-                    });
-                }
             }
-    
-            // Limit data to maximum number of points
-            if (myChart10.data.datasets[0].data.length > maxDataPoints) {
-                myChart10.data.datasets[0].data.shift(); // Remove oldest data point for Haptic 1
-            }
-    
-            if (myChart10.data.datasets[1].data.length > maxDataPoints) {
-                myChart10.data.datasets[1].data.shift(); // Remove oldest data point for Motor 1
-            }
-    
-            myChart10.data.labels = myChart10.data.datasets[0].data.map(point => new Date(point.x).toLocaleTimeString());
-    
-            myChart10.update();
-                
-        });
-    
-        let ctx = $("#line-chart-widget-10")[0].getContext("2d");
-        let myChart10 = new Chart(ctx, {
-            type: "line",
-            data: {
-                labels: [], // empty array to be populated with timestamp values
-                datasets: [
-                    {
-                        label: "Haptic 10",
-                        data: [], // empty array to be populated with MQTT data for Motor 1
-                        borderWidth: 2,
-                        borderColor: colors.primary(),
-                        backgroundColor: "transparent",
-                        pointBorderColor: "transparent",
-                        tension: 0.4,
-                    },
-                    {
-                        label: "Motor 10",
-                        data: [], // empty array to be populated with MQTT data for Haptic 1
-                        borderWidth: 2,
-                        borderColor: "red",
-                        backgroundColor: "transparent",
-                        pointBorderColor: "transparent",
-                        tension: 0.4,
-                    },
-                ],
-            },
-            options: {
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: colors.slate["500"](0.8),
-                        },
-                    },
+              
+            myChart10.update({
+                preservation: true, // Preserve the existing chart data
+            });
+              });
+    let ctx = $("#line-chart-widget-10")[0].getContext("2d");
+    let myChart10 = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: [], // empty array to be populated with timestamp values
+            datasets: [
+                {
+                    label: "Haptic 10",
+                    data: [], // empty array to be populated with MQTT data for Motor 1
+                    borderWidth: 2,
+                    borderColor: colors.primary(),
+                    backgroundColor: "transparent",
+                    pointBorderColor: "transparent",
+                    tension: 0.4,
                 },
-                scales: {
-                    x: {
-                        ticks: {
-                            font: {
-                                size: "12",
-                            },
-                            font: colors.slate["500"](0.8),
-                            callback: function (value, index, values) {
-                                // convert timestamp to hour and minute
-                                const date = new Date(value);
-                                const hours = date.getHours().toString().padStart(2, "0");
-                                const minutes = date.getMinutes().toString().padStart(2, "0");
-                                return hours + ":" + minutes;
-                            },
-                        },
-                        grid: {
-                            display: false,
-                            drawBorder: false,
-                        },
-                    },
-                    y: {
-                        ticks: {
-                            font: {
-                                size: "12",
-                            },
-                            color: colors.slate["500"](0.8),
-                            callback: function (value, index, values) {
-                                return value + "°"; // add degree symbol to y-axis ticks
-                            },
-                        },
-                        grid: {
-                            color: $("html").hasClass("dark")
-                                ? colors.slate["500"](0.3)
-                                : colors.slate["300"](),
-                            borderDash: [2, 2],
-                            drawBorder: false,
-                        },
+                {
+                    label: "Motor 10",
+                    data: [], // empty array to be populated with MQTT data for Haptic 1
+                    borderWidth: 2,
+                    borderColor: "red",
+                    backgroundColor: "transparent",
+                    pointBorderColor: "transparent",
+                    tension: 0.4,
+                },
+            ],
+        },
+        options: {
+            maintainAspectRatio: false,
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: colors.slate["500"](0.8),
                     },
                 },
             },
-            
-        });
-        
+            scales: {
+                x: {
+                    type: "realtime",
+                    realtime: {
+                        duration: 20000,
+                        refresh: 1000,
+                        delay: 2000,
+                        pause: false,
+                        ttl: undefined,
+                        frameRate: 30,
+                        onRefresh: function (chart) {
+                            chart.data.datasets.forEach(function (dataset) {
+                            dataset.data = dataset.data.filter(function (data) {
+                            return data.x >= Date.now() - 20000; // Filter data based on the last 20 seconds
+                            });
+                        });
+                        },
+                    },
+                    ticks: {
+                        font: {
+                            size: "12",
+                        },
+                        font: colors.slate["500"](0.8),
+                    },
+                    grid: {
+                        display: false,
+                        drawBorder: false,
+                    },
+                },
+                y: {
+                    ticks: {
+                        font: {
+                            size: "12",
+                        },
+                        color: colors.slate["500"](0.8),
+                        callback: function (value, index, values) {
+                            return value + "°"; // add degree symbol to y-axis ticks
+                        },
+                    },
+                    grid: {
+                        color: $("html").hasClass("dark")
+                            ? colors.slate["500"](0.3)
+                            : colors.slate["300"](),
+                        borderDash: [2, 2],
+                        drawBorder: false,
+                    },
+                },
+            },
+        },
+                    
+    });           
     }
-    if ($("#line-chart-widget-11").length) {
 
-        client.on('message', function(topic, message) {
-            console.log('Received message:', message.toString());
-            if (topic == 'TA-gyro') {
-                var gyro = message.toString()
-                var gyro = parseFloat(message);
-                myChart11.data.datasets[0].data.push(gyro);
-                myChart11.data.labels.push(new Date().toLocaleTimeString());
-                myChart11.update();
+    if ($("#line-chart-widget-11").length) {
+        client.on("message", function (topic, message) {
+            console.log("Received message:", message.toString());
+            if (topic == "TA-gyro") {
+                var gyro
+                myChart11.data.datasets[0].data.push({
+                    x: Date.now(),
+                    y: gyro,
+                });
             }
-        });
-    
-        let ctx = $("#line-chart-widget-11")[0].getContext("2d");
-        let myChart11 = new Chart(ctx, {
-            type: "line",
-            data: {
-                labels: [], // empty array to be populated with timestamp values
-                datasets: [
-                    {
-                        label: "Gyro",
-                        data: [], // empty array to be populated with MQTT data for Motor 1
-                        borderWidth: 2,
-                        borderColor: colors.primary(),
-                        backgroundColor: "transparent",
-                        pointBorderColor: "transparent",
-                        tension: 0.4,
-                    },
-                ],
-            },
-            options: {
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: colors.slate["500"](0.8),
-                        },
-                    },
+              
+            myChart11.update({
+                preservation: true, // Preserve the existing chart data
+            });
+              });
+    let ctx = $("#line-chart-widget-11")[0].getContext("2d");
+    let myChart11 = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: [], // empty array to be populated with timestamp values
+            datasets: [
+                {
+                    label: "gyro",
+                    data: [], // empty array to be populated with MQTT data for Motor 1
+                    borderWidth: 2,
+                    borderColor: colors.primary(),
+                    backgroundColor: "transparent",
+                    pointBorderColor: "transparent",
+                    tension: 0.4,
                 },
-                scales: {
-                    x: {
-                        ticks: {
-                            font: {
-                                size: "12",
-                            },
-                            font: colors.slate["500"](0.8),
-                            callback: function (value, index, values) {
-                                // convert timestamp to hour and minute
-                                const date = new Date(value);
-                                const hours = date.getHours().toString().padStart(2, "0");
-                                const minutes = date.getMinutes().toString().padStart(2, "0");
-                                return hours + ":" + minutes;
-                            },
-                        },
-                        grid: {
-                            display: false,
-                            drawBorder: false,
-                        },
-                    },
-                    y: {
-                        ticks: {
-                            font: {
-                                size: "12",
-                            },
-                            color: colors.slate["500"](0.8),
-                            callback: function (value, index, values) {
-                                return value + "°"; // add degree symbol to y-axis ticks
-                            },
-                        },
-                        grid: {
-                            color: $("html").hasClass("dark")
-                                ? colors.slate["500"](0.3)
-                                : colors.slate["300"](),
-                            borderDash: [2, 2],
-                            drawBorder: false,
-                        },
+            ],
+        },
+        options: {
+            maintainAspectRatio: false,
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: colors.slate["500"](0.8),
                     },
                 },
             },
-            
-        });
-        
+            scales: {
+                x: {
+                    type: "realtime",
+                    realtime: {
+                        duration: 20000,
+                        refresh: 1000,
+                        delay: 2000,
+                        pause: false,
+                        ttl: undefined,
+                        frameRate: 30,
+                        onRefresh: function (chart) {
+                            chart.data.datasets.forEach(function (dataset) {
+                            dataset.data = dataset.data.filter(function (data) {
+                            return data.x >= Date.now() - 20000; // Filter data based on the last 20 seconds
+                            });
+                        });
+                        },
+                    },
+                    ticks: {
+                        font: {
+                            size: "12",
+                        },
+                        font: colors.slate["500"](0.8),
+                    },
+                    grid: {
+                        display: false,
+                        drawBorder: false,
+                    },
+                },
+                y: {
+                    ticks: {
+                        font: {
+                            size: "12",
+                        },
+                        color: colors.slate["500"](0.8),
+                        callback: function (value, index, values) {
+                            return value + "°"; // add degree symbol to y-axis ticks
+                        },
+                    },
+                    grid: {
+                        color: $("html").hasClass("dark")
+                            ? colors.slate["500"](0.3)
+                            : colors.slate["300"](),
+                        borderDash: [2, 2],
+                        drawBorder: false,
+                    },
+                },
+            },
+        },
+                    
+    });           
     }
 
 
